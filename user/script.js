@@ -13,7 +13,9 @@ window.addEventListener('DOMContentLoaded', () => {
     inisialisasiFiturGeserPanel(); 
 });
 
-// FITUR RESIZE DRAG PANEL
+// =========================================================================
+// 1. ENGINE FITUR GESER PANEL (RESIZE WORKSPACE CONTROLLER)
+// =========================================================================
 function inisialisasiFiturGeserPanel() {
     const container = document.getElementById('workspace-container');
     const panelKiri = document.getElementById('panel-kiri');
@@ -45,17 +47,33 @@ function inisialisasiFiturGeserPanel() {
     });
 }
 
+// =========================================================================
+// 2. LOGIKA MANAJEMEN MENU PILAR UTAMA IELTS
+// =========================================================================
 function pindahModul(namaModul, durasiDetik) {
     modulAktif = namaModul; sisaWaktu = durasiDetik; dataLoaded = false;
+    
+    // Bersihkan penampung data lama secara total agar tidak bocor lintas pilar
+    rawKontenArray = [];
+    rawPertanyaanArray = [];
+    kunciJawabanSistem = [];
+    jawabanUserMap = {}; // Reset lembar jawaban siswa untuk pilar baru
+
     if (synthSuara) synthSuara.cancel(); sedangDiputar = false;
     if (mediaRecorder && sedangMerekam) { mediaRecorder.stop(); sedangMerekam = false; }
 
+    // Perbarui penanda gaya visual CSS tombol pilar aktif
     ['Listening', 'Reading', 'Writing', 'Speaking'].forEach(m => {
         const btn = document.getElementById(`nav-${m}`);
         if (btn) btn.className = m === namaModul ? "px-4 py-2 rounded-lg bg-white text-blue-600 shadow-sm transition" : "px-4 py-2 rounded-lg hover:text-white transition";
     });
 
     document.getElementById('pilar-badge').innerText = `OFFICIAL SIMULATION - IELTS ${namaModul.toUpperCase()}`;
+    
+    // Bersihkan komponen sub-navigasi lama di layar
+    document.getElementById('left-sub-nav').innerHTML = '';
+    document.getElementById('right-sub-nav').innerHTML = '';
+    
     startTimer();
     ambilMateriUjian();
 }
@@ -70,29 +88,38 @@ function startTimer() {
     }, 1000);
 }
 
+// =========================================================================
+// 3. KONEKSI DATA & KOMUNIKASI DATABASE SPREADSHEET (JSONP METHOD)
+// =========================================================================
 function ambilMateriUjian() {
     document.getElementById('passage-content').innerHTML = '<p class="text-slate-400 italic text-center py-12">Fetching secure exam database from Google Sheets...</p>';
+    document.getElementById('quiz-container').innerHTML = '';
+    
     const cb = 'jsonp_kuis_' + Math.round(Math.random() * 100000);
+    
     window[cb] = (data) => {
         dataLoaded = true;
         if (data && data.length > 0) {
+            // Cari data paling baru yang jenis pilarnya benar-benar cocok dengan modulAktif saat ini
             let row = data.reverse().find(d => d.pilar && d.pilar.toUpperCase() === modulAktif.toUpperCase());
             if (row) { processDataExam(row); return; }
         }
         renderEmptyState();
     };
+    
     const script = document.createElement('script');
     script.src = `${SCRIPT_URL}?action=getQuestions&callback=${cb}&_=${new Date().getTime()}`;
     document.body.appendChild(script);
 }
 
 function processDataExam(row) {
-    rawKontenArray = row.konten.split('###').map(p => p.trim());
+    // Memecah teks dokumen menggunakan delimiter penanda struktur '###' buatan AI
+    rawKontenArray = row.konten ? row.konten.split('###').map(p => p.trim()) : [];
     rawPertanyaanArray = row.pertanyaan ? row.pertanyaan.split('###').map(q => q.trim()) : [];
     kunciJawabanSistem = row.kunci_jawaban ? row.kunci_jawaban.split(',') : [];
 
     generateSubNavigations();
-    showSection(0);
+    showSection(0); // Tampilkan bagian urutan pertama secara otomatis
 }
 
 function generateSubNavigations() {
@@ -113,7 +140,13 @@ function generateSubNavigations() {
     }
 }
 
+// =========================================================================
+// 4. RENDER ANTARMUKA WORKSPACE PANEL SEBELAH KIRI (MATERI/AUDIO PLAYER)
+// =========================================================================
 function showSection(index) {
+    if (rawKontenArray.length === 0 || !rawKontenArray[index]) return;
+
+    // Perbarui fokus visual tombol sub-tab kiri aktif
     rawKontenArray.forEach((_, i) => {
         const btn = document.getElementById(`btn-l-sec-${i}`);
         if(btn) btn.className = i === index ? "px-2.5 py-1 text-[10px] font-bold border rounded bg-slate-800 text-white shadow-sm" : "px-2.5 py-1 text-[10px] font-bold border rounded bg-white text-slate-700 hover:bg-slate-100";
@@ -123,14 +156,13 @@ function showSection(index) {
     let textHTML = rawKontenArray[index].split('\n\n').map(p => `<p class="mb-4 text-justify leading-relaxed">${p}</p>`).join('');
 
     if (modulAktif === "Listening") {
-        // PERBAIKAN UTAMA: Mengoper angka INDEKS saja, bukan string teks mentah, agar aman dari error syntax string
         contentArea.innerHTML = `
             <div class="bg-slate-900 text-white p-5 rounded-xl border border-slate-800 shadow-lg text-center space-y-3 max-w-sm mx-auto my-4">
                 <div class="text-[10px] font-bold uppercase tracking-wider text-blue-400">Audio Stream: Part ${index + 1}</div>
                 <div class="text-3xl">🎧</div>
                 <div class="pt-1 flex justify-center gap-2">
                     <button onclick="kontrolAudio('play', ${index})" id="btn-play" class="bg-blue-600 hover:bg-blue-500 font-bold px-4 py-2 rounded text-xs transition">▶ Play Part ${index + 1}</button>
-                    <button onclick="kontrolAudio('stop')" class="bg-slate-800 hover:bg-slate-700 font-bold px-4 py-2 rounded text-xs transition text-slate-400">Stop</button>
+                    <button onclick="kontrolAudio('stop', ${index})" class="bg-slate-800 hover:bg-slate-700 font-bold px-4 py-2 rounded text-xs transition text-slate-400">Stop</button>
                 </div>
                 <div id="audio-status" class="text-[9px] text-slate-500">Audio only plays once.</div>
             </div>`;
@@ -142,14 +174,21 @@ function showSection(index) {
     else showQuestions(index);
 }
 
+// =========================================================================
+// 5. RENDER ANTARMUKA WORKSPACE PANEL SEBELAH KANAN (KUIS/INPUT INTERAKTIF)
+// =========================================================================
 function showQuestions(index) {
-    if (!rawPertanyaanArray[index]) return;
+    const container = document.getElementById('quiz-container');
+    if (rawPertanyaanArray.length === 0 || !rawPertanyaanArray[index]) {
+        container.innerHTML = '';
+        return;
+    }
+
     rawPertanyaanArray.forEach((_, i) => {
         const btn = document.getElementById(`btn-r-sec-${i}`);
         if(btn) btn.className = i === index ? "px-2.5 py-1 text-[10px] font-bold border rounded bg-slate-800 text-white shadow-sm" : "px-2.5 py-1 text-[10px] font-bold border rounded bg-white text-slate-700 hover:bg-slate-100";
     });
 
-    const container = document.getElementById('quiz-container');
     let listQ = rawPertanyaanArray[index].split('\n');
     let htmlHTML = '';
 
@@ -173,6 +212,7 @@ function showQuestions(index) {
 
 function showInteractiveInput(index) {
     const container = document.getElementById('quiz-container');
+    if (rawKontenArray.length === 0) return;
     
     if (modulAktif === "Writing") {
         let currentText = jawabanUserMap[`writing_${index}`] || "";
@@ -198,7 +238,9 @@ function showInteractiveInput(index) {
     }
 }
 
-// MANAGEMENT ENGINE AUDIO SUARA (MIMIC AUDIO STREAM)
+// =========================================================================
+// 6. ENGINE PENGENDALI ELEMEN MULTIMEDIA & SUARA (AUDIO & MIC CONTROLLER)
+// =========================================================================
 function kontrolAudio(aksi, pilarIndex = 0) {
     const statusText = document.getElementById('audio-status');
     const btnPlay = document.getElementById('btn-play');
@@ -212,7 +254,6 @@ function kontrolAudio(aksi, pilarIndex = 0) {
         
         synthSuara.cancel();
         
-        // Mengambil teks transkrip langsung dari memori array internal berdasarkan indeksnya
         let targetTeks = rawKontenArray[pilarIndex] ? rawKontenArray[pilarIndex] : "";
         let cleanedText = targetTeks.replace(/###/g, '').replace(/<[^>]*>/g, '');
         
@@ -283,6 +324,9 @@ function toggleMicSpeaking(index) {
     }
 }
 
+// =========================================================================
+// 7. EVALUASI DAN PERHITUNGAN JAWABAN AKHIR (SUBMIT HANDLER)
+// =========================================================================
 function submitUserAnswers() {
     if (synthSuara) synthSuara.cancel(); if (intervalTimer) clearInterval(intervalTimer);
     
@@ -316,5 +360,5 @@ function submitUserAnswers() {
 
 function renderEmptyState() {
     document.getElementById('passage-title').innerText = `Belum Ada Soal ${modulAktif}`;
-    document.getElementById('passage-content').innerHTML = `<div class="p-4 bg-amber-50 text-amber-700 rounded-xl text-xs border border-amber-200">Materi ${modulAktif} belum siap. Sila generate di Admin panel!</div>`;
+    document.getElementById('passage-content').innerHTML = `<div class="p-4 bg-amber-50 text-amber-700 rounded-xl text-xs border border-amber-200">Materi ${modulAktif} belum siap atau belum di-generate dari Admin Panel!</div>`;
 }
