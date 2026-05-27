@@ -1,14 +1,53 @@
-// =========================================================================
-// PENTING: SESUAIKAN SCRIPT_URL DENGAN LINK WEB APP APPS SCRIPT ANDA
-// =========================================================================
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwUR8oJJpcNPCSpXDF9_3sZdPsiBPJhdJDG6J75BcOUj2PSclHZUp-xJIK81rrcbq7R/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzcyDKJKSzdVXgqoKpssG_GaNHjmKTUGpawktfilLCEyh9GdXQIzRY8Frv0PvP2fZBy/exec";
 
 let modulAktif = "Reading", kunciJawabanSistem = [], sisaWaktu = 3600, intervalTimer = null, dataLoaded = false;
 let rawKontenArray = [], rawPertanyaanArray = [], jawabanUserMap = {};
 let synthSuara = window.speechSynthesis, utteranceSuara = null, sedangDiputar = false;
 let mediaRecorder = null, audioChunks = [], sedangMerekam = false, recordedBlobs = {};
 
-window.addEventListener('DOMContentLoaded', () => pindahModul('Reading', 3600));
+window.addEventListener('DOMContentLoaded', () => {
+    pindahModul('Reading', 3600);
+    inisialisasiFiturGeserPanel(); // Aktifkan fungsi drag panel pasca load
+});
+
+// =========================================================================
+// LOGIKA SAKTI: PENGGESER PANEL REAL-TIME (RESIZE CONTROLLER)
+// =========================================================================
+function inisialisasiFiturGeserPanel() {
+    const container = document.getElementById('workspace-container');
+    const panelKiri = document.getElementById('panel-kiri');
+    const resizer = document.getElementById('panel-resizer');
+
+    let isDragging = false;
+
+    resizer.addEventListener('mousedown', function (e) {
+        e.preventDefault();
+        isDragging = true;
+        document.body.style.cursor = 'col-resize';
+    });
+
+    document.addEventListener('mousemove', function (e) {
+        if (!isDragging) return;
+
+        // Hitung persentase posisi kursor terhadap lebar layar kontainer workspace
+        const containerWidth = container.clientWidth;
+        const currentLeftX = e.clientX - container.getBoundingClientRect().left;
+        
+        let newWidthPercentage = (currentLeftX / containerWidth) * 100;
+
+        // Batasi geseran minimal 25% dan maksimal 75% agar layout tidak rusak hancur
+        if (newWidthPercentage >= 25 && newWidthPercentage <= 75) {
+            panelKiri.style.width = newWidthPercentage + '%';
+        }
+    });
+
+    document.addEventListener('mouseup', function () {
+        if (isDragging) {
+            isDragging = false;
+            document.body.style.cursor = 'default';
+        }
+    });
+}
 
 function pindahModul(namaModul, durasiDetik) {
     modulAktif = namaModul; sisaWaktu = durasiDetik; dataLoaded = false;
@@ -57,7 +96,7 @@ function processDataExam(row) {
     kunciJawabanSistem = row.kunci_jawaban ? row.kunci_jawaban.split(',') : [];
 
     generateSubNavigations();
-    showSection(0); // Buka bagian pertama otomatis
+    showSection(0);
 }
 
 function generateSubNavigations() {
