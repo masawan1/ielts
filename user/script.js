@@ -1,4 +1,4 @@
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx-QbU6LuHCzb7sIscbwvN6-iTYc5pkgy8Tg1gKBMeRNdWIM1aq5HTJcKbOvqcOUygY/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxLB2rES6lBqwuzIHuy8WICfVvO_Wr164xzHqJuh7FphbY4NXZDUqK2nZ_33yPaGNNI/exec";
 
 let modulAktif = "Reading", kunciJawabanSistem = [], sisaWaktu = 3600, intervalTimer = null, dataLoaded = false;
 let rawKontenArray = [], rawPertanyaanArray = [], jawabanUserMap = {};
@@ -24,7 +24,6 @@ function inisialisasiFiturGeserPanel() {
     document.addEventListener('mouseup', () => isDragging = false);
 }
 
-// LOGIKA UTAMA: DETEKSI JENIS SEKTOR MODUL (IELTS VS GENERAL ENGLISH LEARN)
 function pindahModul(namaModul, durasiDetik) {
     modulAktif = namaModul; sisaWaktu = durasiDetik; dataLoaded = false;
     rawKontenArray = []; rawPertanyaanArray = []; kunciJawabanSistem = []; jawabanUserMap = {};
@@ -40,13 +39,9 @@ function pindahModul(namaModul, durasiDetik) {
     for (let key in listMenuId) {
         const btn = document.getElementById(listMenuId[key]);
         if (btn) {
-            if (key === namaModul) {
-                btn.className = (key === 'Grammar & Vocab' || key === 'Daily Conversation' || key === 'Short Expression' || key === 'Pronunciation')
-                    ? "px-2.5 py-1 rounded bg-emerald-400 text-slate-900 shadow-sm transition"
-                    : "px-2.5 py-1 rounded bg-white text-blue-600 shadow-sm transition";
-            } else {
-                btn.className = "px-2.5 py-1 rounded hover:text-white transition";
-            }
+            btn.className = (key === namaModul)
+                ? ((key === 'Grammar & Vocab' || key === 'Daily Conversation' || key === 'Short Expression' || key === 'Pronunciation') ? "px-2.5 py-1 rounded bg-emerald-400 text-slate-900 shadow-sm transition" : "px-2.5 py-1 rounded bg-white text-blue-600 shadow-sm transition")
+                : "px-2.5 py-1 rounded hover:text-white transition";
         }
     }
 
@@ -54,21 +49,17 @@ function pindahModul(namaModul, durasiDetik) {
     const timerWidget = document.getElementById('timer');
     const submitBtnArea = document.querySelector('button[onclick="submitUserAnswers()"]').parentElement;
 
-    // DETEKSI APAKAH MODUL TERMASUK RUMPUN LEARN MODE (BAHASA INGGRIS UMUM)
     if (namaModul === 'Grammar & Vocab' || namaModul === 'Daily Conversation' || namaModul === 'Short Expression' || namaModul === 'Pronunciation') {
         if (intervalTimer) clearInterval(intervalTimer);
-        statusBadge.innerText = "LEARN MODE";
+        statusBadge.innerText = "DUOLINGO LEARN MODE";
         statusBadge.className = "bg-emerald-500 text-slate-950 px-2 py-0.5 rounded font-black text-[10px]";
-        document.getElementById('pilar-badge').innerText = `LEARNING - ${namaModul.toUpperCase()}`;
-        document.getElementById('total-questions-badge').innerText = "STUDY NOTES & INSIGHT";
+        document.getElementById('pilar-badge').innerText = `FUN LEARNING - ${namaModul.toUpperCase()}`;
+        document.getElementById('total-questions-badge').innerText = "INTERACTIVE FLASHCARDS";
         
-        timerWidget.innerText = "☕ Study Room";
-        timerWidget.className = "text-xs font-extrabold px-3 py-1 bg-emerald-600 text-white rounded shadow animate-none";
-        
-        // Sembunyikan tombol submit ujian karena tidak ada soal kuis yang perlu dikirim
+        timerWidget.innerText = "🦉 Level Up!";
+        timerWidget.className = "text-xs font-extrabold px-3 py-1 bg-emerald-600 text-white rounded shadow animate-bounce";
         submitBtnArea.classList.add('hidden');
     } else {
-        // KONDISI JIKA MODUL ADALAH REZIM SIMULASI IELTS KETAT
         statusBadge.innerText = "SIMULATION MODE";
         statusBadge.className = "bg-blue-600 text-white px-2 py-0.5 rounded font-black text-[10px]";
         document.getElementById('pilar-badge').innerText = `OFFICIAL SIMULATION - IELTS ${namaModul.toUpperCase()}`;
@@ -95,7 +86,7 @@ function startTimer() {
 }
 
 function ambilMateriUjian() {
-    document.getElementById('passage-content').innerHTML = '<p class="text-slate-400 italic text-center py-12">Streaming study guidelines from database...</p>';
+    document.getElementById('passage-content').innerHTML = '<p class="text-slate-400 italic text-center py-12">Loading fun study session...</p>';
     document.getElementById('quiz-container').innerHTML = '';
     const cb = 'jsonp_kuis_' + Math.round(Math.random() * 100000);
     
@@ -125,16 +116,14 @@ function generateSubNavigations() {
     const rightNav = document.getElementById('right-sub-nav');
     leftNav.innerHTML = ''; rightNav.innerHTML = '';
 
-    let label = "Topic";
-    if (modulAktif === "Listening" || modulAktif === "Daily Conversation") label = "Dialogue / Part";
+    let label = "Stage";
+    if (modulAktif === "Listening" || modulAktif === "Daily Conversation") label = "Scenario";
     if (modulAktif === "Reading") label = "Passage";
-    if (modulAktif === "Writing") label = "Task";
 
     rawKontenArray.forEach((_, index) => {
-        leftNav.innerHTML += `<button onclick="showSection(${index})" id="btn-l-sec-${index}" class="px-2 py-0.5 text-[10px] font-bold border rounded bg-white text-slate-700 hover:bg-slate-50 transition">${label} ${index + 1}</button>`;
+        leftNav.innerHTML += `<button onclick="showSection(${index})" id="btn-l-sec-${index}" class="px-3 py-1 text-[10px] font-bold border rounded bg-white text-slate-700 hover:bg-slate-50 transition">${label} ${index + 1}</button>`;
     });
 
-    // Sub-navigasi kanan hanya dibuat jika berada di mode IELTS (karena mode belajar memetakan konten berdampingan otomatis)
     if (kunciJawabanSistem[0] !== "LEARN_MODE" && rawPertanyaanArray.length > 0 && rawPertanyaanArray[0] !== "") {
         rawPertanyaanArray.forEach((_, index) => {
             rightNav.innerHTML += `<button onclick="showQuestions(${index})" id="btn-r-sec-${index}" class="px-2 py-0.5 text-[10px] font-bold border rounded bg-white text-slate-700 hover:bg-slate-50 transition">Q-Set ${index + 1}</button>`;
@@ -146,43 +135,77 @@ function showSection(index) {
     if (rawKontenArray.length === 0 || !rawKontenArray[index]) return;
     rawKontenArray.forEach((_, i) => {
         const btn = document.getElementById(`btn-l-sec-${i}`);
-        if(btn) btn.className = i === index ? "px-2 py-0.5 text-[10px] font-bold border rounded bg-slate-800 text-white shadow-sm" : "px-2 py-0.5 text-[10px] font-bold border rounded bg-white text-slate-700";
+        if(btn) btn.className = i === index ? "px-3 py-1 text-[10px] font-bold border rounded bg-emerald-600 text-white shadow-sm" : "px-3 py-1 text-[10px] font-bold border rounded bg-white text-slate-700";
     });
 
     const contentArea = document.getElementById('passage-content');
-    let textHTML = rawKontenArray[index].split('\n\n').map(p => `<p class="mb-3 text-justify leading-relaxed">${p}</p>`).join('');
+    let textHTML = rawKontenArray[index].split('\n\n').map(p => `<p class="mb-4 text-slate-700 text-sm leading-relaxed bg-white p-3 rounded-xl border border-slate-100 shadow-sm">${p}</p>`).join('');
 
-    if (modulAktif === "Listening" || modulAktif === "Daily Conversation") {
-        contentArea.innerHTML = `
-            <div class="bg-slate-900 text-white p-5 rounded-xl text-center space-y-3 max-w-sm mx-auto my-4 shadow-xl">
-                <div class="text-[9px] font-bold text-blue-400 uppercase tracking-widest">Audio Listener Engine</div>
-                <div class="text-2xl">🎧</div>
-                <div class="pt-1 flex justify-center gap-2">
-                    <button onclick="kontrolAudio('play', ${index})" id="btn-play" class="bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded text-xs font-bold transition">▶ Play Audio</button>
-                    <button onclick="kontrolAudio('stop', ${index})" class="bg-slate-800 hover:bg-slate-700 px-4 py-2 rounded text-xs font-bold transition text-slate-400">Stop</button>
-                </div>
-                <div id="audio-status" class="text-[9px] text-slate-500 italic">Ready to stream speech text.</div>
-            </div>`;
-    } else {
-        contentArea.innerHTML = textHTML;
-    }
+    contentArea.innerHTML = `
+        <div class="space-y-3">
+            <div class="text-[10px] font-black text-emerald-600 tracking-wider uppercase">💡 Bite-Sized Core Concept:</div>
+            ${textHTML}
+        </div>`;
 
-    // ADAPTASI KANVAS KANAN: Jika terdeteksi data edukasi murni (LEARN_MODE), render sebagai teks review rangkuman, bukan kuis
+    // ENGINE TRANSLATOR KARTU INTERAKTIF MODEL DUOLINGO
     if (kunciJawabanSistem[0] === "LEARN_MODE") {
         const container = document.getElementById('quiz-container');
+        container.innerHTML = "";
+        
         if (rawPertanyaanArray[index]) {
-            let notesHTML = rawPertanyaanArray[index].split('\n\n').map(p => `<div class="p-4 bg-emerald-50/60 border border-emerald-100 rounded-xl text-xs text-slate-800 leading-relaxed shadow-sm mb-2">${p}</div>`).join('');
-            container.innerHTML = `
-                <div class="space-y-2">
-                    <div class="text-[10px] font-extrabold text-emerald-600 uppercase tracking-wider mb-2">📚 Teacher's Notes & Reference Box:</div>
-                    ${notesHTML}
-                </div>`;
-        } else {
-            container.innerHTML = `<p class="text-slate-400 italic text-xs text-center py-10">Membuka materi pendukung...</p>`;
+            let barisKartu = rawPertanyaanArray[index].split('\n');
+            let deckHTML = `<div class="text-[10px] font-black text-slate-500 tracking-wider uppercase mb-3">Tap cards to flip meaning & speak!</div><div class="grid grid-cols-1 gap-3">`;
+            
+            barisKartu.forEach((item, kIdx) => {
+                if (item.includes('||')) {
+                    let part = item.split('||').map(s => s.trim());
+                    let kataInggris = part[0] || "Word";
+                    let artiIndo = part[1] || "Arti";
+                    let contohKalimat = part[2] || "";
+                    
+                    deckHTML += `
+                    <div class="bg-white border-2 border-slate-200 rounded-2xl p-4 shadow-sm hover:border-emerald-400 transition cursor-pointer relative overflow-hidden group" onclick="balikKartuHafalan(this)">
+                        <div class="flex justify-between items-center card-front">
+                            <div>
+                                <span class="bg-emerald-100 text-emerald-800 text-[9px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wide">Vocab Item</span>
+                                <h4 class="text-lg font-black text-slate-800 mt-1">${kataInggris}</h4>
+                                <p class="text-[11px] text-slate-400 mt-1 italic font-medium">🗣️ ${contohKalimat}</p>
+                            </div>
+                            <button onclick="suaraLafalDuolingo(event, '${kataInggris}')" class="w-8 h-8 rounded-full bg-emerald-500 hover:bg-emerald-600 text-white flex items-center justify-center text-xs shadow transition transform active:scale-95">🔊</button>
+                        </div>
+                        <div class="hidden bg-emerald-950 text-white absolute inset-0 p-4 flex flex-col justify-center items-center text-center card-back transition-all">
+                            <span class="text-[9px] text-emerald-400 font-bold uppercase tracking-widest">INDONESIAN MEANING</span>
+                            <div class="text-xl font-extrabold mt-1">${artiIndo}</div>
+                            <div class="text-[10px] text-emerald-300 italic mt-2">Click anywhere to flip back</div>
+                        </div>
+                    </div>`;
+                }
+            });
+            deckHTML += `</div>`;
+            container.innerHTML = deckHTML;
         }
     } else {
-        // Tampilan Lembar Kuis Khusus IELTS
         showQuestions(index);
+    }
+}
+
+function balikKartuHafalan(elemen) {
+    const backSide = elemen.querySelector('.card-back');
+    if (backSide.classList.contains('hidden')) {
+        backSide.classList.remove('hidden');
+    } else {
+        backSide.classList.add('hidden');
+    }
+}
+
+function suaraLafalDuolingo(event, teks) {
+    event.stopPropagation(); // Mencegah kartu membalik saat mengklik tombol suara
+    if (synthSuara) {
+        synthSuara.cancel();
+        let u = new SpeechSynthesisUtterance(teks);
+        u.lang = 'en-US';
+        u.rate = 0.85; // Sedikit lebih lambat khas Duolingo agar siswa mendengar artikulasi dengan jelas
+        synthSuara.speak(u);
     }
 }
 
@@ -205,29 +228,14 @@ function showQuestions(index) {
             <div class="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3 shadow-sm">
                 <p class="font-semibold text-xs text-slate-800 leading-relaxed">${qItem}</p>
                 <div class="grid grid-cols-3 gap-2 pt-1">
-                    <button onclick="simpanObjekAnswer('${globalIdx}', 'TRUE', this)" class="py-1.5 text-[10px] border rounded bg-white text-slate-700 ${activeAns === 'TRUE' ? 'border-2 border-blue-500 bg-blue-50 text-blue-600 font-bold' : ''}">TRUE / YES</button>
-                    <button onclick="simpanObjekAnswer('${globalIdx}', 'FALSE', this)" class="py-1.5 text-[10px] border rounded bg-white text-slate-700 ${activeAns === 'FALSE' ? 'border-2 border-blue-500 bg-blue-50 text-blue-600 font-bold' : ''}">FALSE / NO</button>
+                    <button onclick="simpanObjekAnswer('${globalIdx}', 'TRUE', this)" class="py-1.5 text-[10px] border rounded bg-white text-slate-700 ${activeAns === 'TRUE' ? 'border-2 border-blue-500 bg-blue-50 text-blue-600 font-bold' : ''}">TRUE</button>
+                    <button onclick="simpanObjekAnswer('${globalIdx}', 'FALSE', this)" class="py-1.5 text-[10px] border rounded bg-white text-slate-700 ${activeAns === 'FALSE' ? 'border-2 border-blue-500 bg-blue-50 text-blue-600 font-bold' : ''}">FALSE</button>
                     <button onclick="simpanObjekAnswer('${globalIdx}', 'NOT GIVEN', this)" class="py-1.5 text-[10px] border rounded bg-white text-slate-700 ${activeAns === 'NOT GIVEN' ? 'border-2 border-blue-500 bg-blue-50 text-blue-600 font-bold' : ''}">NOT GIVEN</button>
                 </div>
             </div>`;
         }
     });
     container.innerHTML = htmlHTML;
-}
-
-function kontrolAudio(aksi, pilarIndex = 0) {
-    const statusText = document.getElementById('audio-status');
-    const btnPlay = document.getElementById('btn-play');
-    if (aksi === 'play') {
-        if (synthSuara.paused && sedangDiputar) { synthSuara.resume(); if(statusText) statusText.innerText = "Status: Playing audio..."; return; }
-        synthSuara.cancel();
-        let targetTeks = rawKontenArray[pilarIndex] ? rawKontenArray[pilarIndex] : "";
-        utteranceSuara = new SpeechSynthesisUtterance(targetTeks.replace(/###/g, '').replace(/<[^>]*>/g, ''));
-        utteranceSuara.lang = 'en-US'; utteranceSuara.rate = 0.95;
-        utteranceSuara.onstart = () => { sedangDiputar = true; if(btnPlay) btnPlay.innerText = "⏸ Pause"; };
-        utteranceSuara.onend = () => { sedangDiputar = false; if(btnPlay) btnPlay.innerText = "▶ Replay Audio"; if(statusText) statusText.innerText = "Status: Finished."; };
-        synthSuara.speak(utteranceSuara);
-    } else if (aksi === 'stop') { synthSuara.cancel(); sedangDiputar = false; if(btnPlay) btnPlay.innerText = "▶ Play Audio"; }
 }
 
 function simpanObjekAnswer(id, val, btn) {
@@ -239,20 +247,18 @@ function simpanObjekAnswer(id, val, btn) {
 function submitUserAnswers() {
     if (synthSuara) synthSuara.cancel(); if (intervalTimer) clearInterval(intervalTimer);
     let score = "0.0", benar = 0;
-    
     kunciJawabanSistem.forEach((kunci, i) => {
         let userAns = "";
         for (let key in jawabanUserMap) { if (key.startsWith(`${i}_`) || key === `0_${i}`) userAns = jawabanUserMap[key]; }
         if (userAns && userAns.trim().toUpperCase() === kunci.trim().toUpperCase()) benar++;
     });
     score = benar === kunciJawabanSistem.length ? "9.0" : benar > 0 ? "6.5" : "4.0";
-    
     document.getElementById('band-score').innerText = score;
-    document.getElementById('correct-fraction').innerText = `Benar ${benar} dari ${kunciJawabanSistem.length} Soal`;
+    document.getElementById('correct-fraction').innerText = `Correct: ${benar} / ${kunciJawabanSistem.length}`;
     const modal = document.getElementById('result-modal');
     modal.classList.remove('hidden'); setTimeout(() => modal.classList.remove('opacity-0'), 50);
 }
 
 function renderEmptyState() {
-    document.getElementById('passage-content').innerHTML = `<div class="p-4 bg-amber-50 text-amber-700 rounded-xl text-xs border border-amber-200">Materi belum di-generate oleh Admin. Silakan buat materi pilar "${modulAktif}" ini di Admin Panel terlebih dahulu agar muncul di sini!</div>`;
+    document.getElementById('passage-content').innerHTML = `<div class="p-4 bg-amber-50 text-amber-700 rounded-xl text-xs border border-amber-200">Materi belum tersedia. Silakan klik buat materi "${modulAktif}" ini di Admin Panel terlebih dahulu!</div>`;
 }
