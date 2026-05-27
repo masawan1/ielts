@@ -3,16 +3,16 @@ body {
     -webkit-font-smoothing: antialiased;
 }
 
-/* Menyembunyikan batang scrollbar kaku di Mobile Navigation Buttons */
+/* Sembunyikan batang scrollbar bawaan browser di deretan tombol sub-nav agar rapi */
 .no-scrollbar::-webkit-scrollbar {
     display: none;
 }
 .no-scrollbar {
-    -ms-overflow-style: none;  /* IE and Edge */
-    scrollbar-width: none;  /* Firefox */
+    -ms-overflow-style: none;
+    scrollbar-width: none;
 }
 
-/* Custom Scrollbar untuk lembar bacaan */
+/* Custom Scrollbar untuk kontainer bacaan */
 ::-webkit-scrollbar {
     width: 4px;
     height: 4px;
@@ -23,6 +23,9 @@ body {
 ::-webkit-scrollbar-thumb {
     background: #cbd5e1;
     border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
 }
 
 #panel-resizer {
