@@ -4,7 +4,7 @@ let modulAktif = "Reading", kunciJawabanSistem = [], sisaWaktu = 3600, intervalT
 let rawKontenArray = [], rawPertanyaanArray = [], jawabanUserMap = {};
 let synthSuara = window.speechSynthesis, utteranceSuara = null, sedangDiputar = false;
 let mediaRecorder = null, audioChunks = [], sedangMerekam = false, recordedBlobs = {};
-let currentTabMobile = "materi"; // Menyimpan state tab aktif di HP
+let currentTabMobile = "materi"; 
 
 window.addEventListener('DOMContentLoaded', () => {
     pindahModul('Reading', 3600);
@@ -23,14 +23,14 @@ function inisialisasiFiturGeserPanel() {
     if (!resizer) return;
     resizer.addEventListener('mousedown', (e) => { e.preventDefault(); isDragging = true; });
     document.addEventListener('mousemove', (e) => {
-        if (!isDragging || window.innerWidth < 768) return; // Kunci geser jika di layar HP
+        if (!isDragging || window.innerWidth < 768) return; 
         let newPercent = ((e.clientX - container.getBoundingClientRect().left) / container.clientWidth) * 100;
         if (newPercent >= 25 && newPercent <= 75) panelKiri.style.width = newPercent + '%';
     });
     document.addEventListener('mouseup', () => isDragging = false);
 }
 
-// LOGIKA RESPONSIVE: Mengatur visibilitas tab saat ukuran layar berubah
+// LOGIKA DETEKSI RESPONSIF SMARTPHONE
 function checkResponsiveLayout() {
     if (window.innerWidth >= 768) {
         document.getElementById('panel-kiri').style.display = 'flex';
@@ -42,7 +42,7 @@ function checkResponsiveLayout() {
     }
 }
 
-// SAKELAR SWAP TAB MOBILE: Mengatur penukaran tampilan layar di HP
+// MANAGER TRANSISE TAB MOBILE (Passage vs Answer Sheet)
 function gantiTabMobile(tab) {
     currentTabMobile = tab;
     const panelKiri = document.getElementById('panel-kiri');
@@ -53,16 +53,15 @@ function gantiTabMobile(tab) {
     if (!panelKiri || !panelKanan) return;
 
     if (tab === 'materi') {
-        panelKiri.style.display = 'flex';
-        panelKanan.style.className = "hidden"; 
-        panelKanan.setAttribute('style', 'display: none !important');
+        panelKiri.style.setProperty('display', 'flex', 'important');
+        panelKanan.style.setProperty('display', 'none', 'important');
         
         btnMateri.className = "flex flex-col items-center justify-center text-blue-600 font-extrabold text-[11px] w-1/3 py-1 transition-all";
         btnJawaban.className = "flex flex-col items-center justify-center text-slate-400 font-bold text-[11px] w-1/3 py-1 transition-all";
     } else {
-        panelKiri.style.display = 'none';
+        panelKiri.style.setProperty('display', 'none', 'important');
+        panelKanan.style.setProperty('display', 'flex', 'important');
         panelKanan.className = "flex bg-white border border-slate-200 rounded-2xl flex-col h-full overflow-hidden flex-1 w-full";
-        panelKanan.setAttribute('style', 'display: flex !important');
         
         btnMateri.className = "flex flex-col items-center justify-center text-slate-400 font-bold text-[11px] w-1/3 py-1 transition-all";
         btnJawaban.className = "flex flex-col items-center justify-center text-blue-600 font-extrabold text-[11px] w-1/3 py-1 transition-all";
@@ -88,7 +87,7 @@ function pindahModul(namaModul, durasiDetik) {
     document.getElementById('pilar-badge').innerText = `IELTS ${namaModul.toUpperCase()}`;
     startTimer();
     ambilMateriUjian();
-    if (window.innerWidth < 768) gantiTabMobile('materi'); // Reset ke tab kiri setiap ganti pilar
+    if (window.innerWidth < 768) gantiTabMobile('materi'); 
 }
 
 function startTimer() {
@@ -102,7 +101,7 @@ function startTimer() {
 }
 
 function ambilMateriUjian() {
-    document.getElementById('passage-content').innerHTML = '<p class="text-slate-400 italic text-center py-12">Loading security secure database...</p>';
+    document.getElementById('passage-content').innerHTML = '<p class="text-slate-400 italic text-center py-12">Loading secure database from Sheets...</p>';
     document.getElementById('quiz-container').innerHTML = '';
     const cb = 'jsonp_kuis_' + Math.round(Math.random() * 100000);
     
@@ -135,12 +134,12 @@ function generateSubNavigations() {
     let label = (modulAktif === "Listening" || modulAktif === "Speaking") ? "Part" : "Passage / Task";
 
     rawKontenArray.forEach((_, index) => {
-        leftNav.innerHTML += `<button onclick="showSection(${index})" id="btn-l-sec-${index}" class="px-2.5 py-1 text-[10px] font-bold border rounded-lg bg-white text-slate-700 hover:bg-slate-100 transition shadow-sm flex-shrink-0">${label} ${index + 1}</button>`;
+        leftNav.innerHTML += `<button onclick="showSection(${index})" id="btn-l-sec-${index}" class="px-2.5 py-1 text-[10px] font-bold border rounded-lg bg-white text-slate-700 shadow-sm flex-shrink-0">${label} ${index + 1}</button>`;
     });
 
     if (modulAktif === "Reading" || modulAktif === "Listening") {
         rawPertanyaanArray.forEach((_, index) => {
-            rightNav.innerHTML += `<button onclick="showQuestions(${index})" id="btn-r-sec-${index}" class="px-2.5 py-1 text-[10px] font-bold border rounded-lg bg-white text-slate-700 hover:bg-slate-100 transition shadow-sm flex-shrink-0">Q-Set ${index + 1}</button>`;
+            rightNav.innerHTML += `<button onclick="showQuestions(${index})" id="btn-r-sec-${index}" class="px-2.5 py-1 text-[10px] font-bold border rounded-lg bg-white text-slate-700 shadow-sm flex-shrink-0">Q-Set ${index + 1}</button>`;
         });
     }
 }
@@ -153,14 +152,14 @@ function showSection(index) {
     });
 
     const contentArea = document.getElementById('passage-content');
-    let textHTML = rawKontenArray[index].split('\n\n').map(p => `<p class="mb-3 text-justify leading-relaxed">${p}</p>`).join('');
+    let textHTML = rawKontenArray[index].split('\n\n').map(p => `<p class="mb-4 text-justify leading-relaxed">${p}</p>`).join('');
 
     if (modulAktif === "Listening") {
         contentArea.innerHTML = `
-            <div class="bg-slate-900 text-white p-5 rounded-2xl border border-slate-800 shadow-xl text-center space-y-4 max-w-sm mx-auto my-4">
-                <div class="text-[10px] font-bold uppercase tracking-wider text-blue-400">Audio Stream: Part ${index + 1}</div>
-                <div class="text-3xl">🎧</div>
-                <div class="pt-1 flex justify-center gap-2">
+            <div class="bg-slate-900 text-white p-6 rounded-2xl border border-slate-800 shadow-xl text-center space-y-4 max-w-sm mx-auto my-6">
+                <div class="text-[10px] font-bold uppercase tracking-wider text-blue-400">Secure Native Stream: Part ${index + 1}</div>
+                <div class="text-4xl">🎧</div>
+                <div class="pt-2 flex justify-center gap-2">
                     <button onclick="kontrolAudio('play', ${index})" id="btn-play" class="bg-blue-600 hover:bg-blue-500 font-bold px-4 py-2 rounded-lg text-xs transition shadow-md">▶ Play Audio</button>
                     <button onclick="kontrolAudio('stop', ${index})" class="bg-slate-800 hover:bg-slate-700 font-bold px-4 py-2 rounded-lg text-xs transition text-slate-400">Stop</button>
                 </div>
@@ -213,7 +212,7 @@ function showInteractiveInput(index) {
                     <span class="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider">Answer Sheet: Task ${index + 1}</span>
                     <span id="word-counter" class="text-[9px] font-bold px-2 py-0.5 bg-slate-100 text-slate-600 rounded-lg border">${wCount} words</span>
                 </div>
-                <textarea oninput="hitungKataEssay(this, ${index})" placeholder="Type your response here..." class="w-full h-64 md:h-80 p-3 bg-slate-50/50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-blue-500 resize-none leading-relaxed transition-colors">${currentText}</textarea>
+                <textarea oninput="writingTextInputHandler(this, ${index})" placeholder="Type your response here..." class="w-full h-64 md:h-80 p-3 bg-slate-50/50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-blue-500 resize-none leading-relaxed transition-colors">${currentText}</textarea>
             </div>`;
     } else if (modulAktif === "Speaking") {
         container.innerHTML = `
@@ -248,7 +247,7 @@ function simpanObjekAnswer(id, val, btn) {
     jawabanUserMap[id] = val;
 }
 
-function hitungKataEssay(textarea, index) {
+function writingTextInputHandler(textarea, index) {
     let txt = textarea.value; jawabanUserMap['writing_' + index] = txt;
     document.getElementById('word-counter').innerText = (txt.trim() === "" ? 0 : txt.trim().split(/\s+/).length) + ' words';
 }
