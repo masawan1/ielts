@@ -11,6 +11,7 @@ const PILAR_GUIDES = {
     Speaking: { tag: "Speaking Interview Component", info: "3 Bagian / Tatap Muka", quizInfo: "Oral Interview" }
 };
 
+// Data cadangan lokal khusus jika koneksi ke Google Sheets terputus/lambat
 const FALLBACK_DATA = {
     pilar: "Reading",
     judul: "The Quantum Frontier: Reimagining Space Propulsion",
@@ -25,17 +26,18 @@ let sisaWaktu = 3600;
 let intervalTimer = null;
 let dataLoaded = false;
 
+// Jalankan otomatis saat dokumen HTML selesai dimuat
 window.addEventListener('DOMContentLoaded', () => {
-    pindahModul('Reading', 3600); // Mulai otomatis di Reading saat halaman di-load
+    pindahModul('Reading', 3600); 
 });
 
-// FUNGSI BERPINDAH MENU MODUL (SEKARANG SEMUA PILAR MENGAMBIL DATA DINAMIS)
+// FUNGSI BERPINDAH MENU MODUL & AMBIL DATA DINAMIS
 function pindahModul(namaModul, durasiDetik) {
     modulAktif = namaModul;
     sisaWaktu = durasiDetik;
     dataLoaded = false;
     
-    // Perbarui visual CSS tombol tab navigasi
+    // Perbarui visual CSS tombol tab navigasi pilar yang aktif
     ['Listening', 'Reading', 'Writing', 'Speaking'].forEach(m => {
         const btn = document.getElementById(`nav-${m}`);
         if (btn) {
@@ -47,24 +49,25 @@ function pindahModul(namaModul, durasiDetik) {
         }
     });
 
-    // Update Badge Informasi berdasarkan pilar yang dipilih
+    // Update Elemen Informasi UI berdasarkan pilar pilihan
     document.getElementById('pilar-badge').innerText = `IELTS ${namaModul}`;
     document.getElementById('panel-tag').innerText = PILAR_GUIDES[namaModul].tag;
     document.getElementById('format-info-badge').innerText = PILAR_GUIDES[namaModul].info;
     document.getElementById('total-questions-badge').innerText = PILAR_GUIDES[namaModul].quizInfo;
     
+    // Reset dan mulai ulang countdown timer pilar baru
     startTimer();
 
-    // Set status loading awal sebelum data dari spreadsheet tiba
-    document.getElementById('passage-title').innerText = `Loading ${namaModul} Material...`;
+    // Tampilkan placeholder loading sebelum response JSONP tiba
+    document.getElementById('passage-title').innerText = "Memuat materi...";
     document.getElementById('passage-content').innerHTML = '<p class="text-slate-400 italic text-center py-12">Menghubungkan ke database Google Sheets Anda...</p>';
     document.getElementById('quiz-container').innerHTML = '';
 
-    // Ambil data dari database spreadsheet untuk pilar aktif
+    // Ambil data real-time dari spreadsheet
     ambilMateriUjian();
 }
 
-// LOGIKA TIMER COUNTDOWN
+// LOGIKA COUNTDOWN TIMER
 function startTimer() {
     const display = document.getElementById('timer');
     if (intervalTimer) clearInterval(intervalTimer);
@@ -77,15 +80,16 @@ function startTimer() {
         if (sisaWaktu <= 0) {
             clearInterval(intervalTimer);
             display.innerText = "Time Up!";
-            submitUserAnswers(true);
+            submitUserAnswers(true); // Kirim lembar jawaban otomatis saat waktu habis
         } else {
             sisaWaktu--;
         }
     }, 1000);
 }
 
-// AMBIL DATA BERDASARKAN PILAR YANG SEDANG AKTIF + ANTI CACHE
+// AMBIL DATA BERDASARKAN PILAR YANG SEDANG AKTIF + ANTI CACHE VIA JSONP
 function ambilMateriUjian() {
+    // Batas waktu tunggu maksimal 4 detik. Jika server sibuk, pakai fallback data biar halaman tidak ngeblank putih
     const timeoutFetch = setTimeout(() => {
         if (!dataLoaded) {
             console.warn("Jaringan lambat, memuat materi cadangan.");
@@ -99,7 +103,7 @@ function ambilMateriUjian() {
         clearTimeout(timeoutFetch);
         
         if (data && data.length > 0) {
-            // FILTER DATA: Cari soal paling terbaru (paling bawah di Sheet) yang kolom pilarnya cocok dengan tab yang sedang dibuka siswa
+            // FILTER DATA: Cari baris soal terbawah (terbaru) di Sheet yang kolom pilarnya cocok dengan tab pilihan user
             let materiCocok = null;
             for (let i = data.length - 1; i >= 0; i--) {
                 if (data[i].pilar && data[i].pilar.toUpperCase() === modulAktif.toUpperCase()) {
@@ -108,14 +112,21 @@ function ambilMateriUjian() {
                 }
             }
 
-            // Jika di sheet ditemukan materi yang cocok dengan pilar pilihan, render ke layar
+            // Jika baris pilar tersebut ditemukan di database sheet, pasang ke UI
             if (materiCocok) {
                 muatMateriKeUI(materiCocok);
             } else {
-                // Jika pilar tersebut belum pernah di-generate sama sekali di admin panel
+                // Tampilan panel info jika pilar tersebut belum pernah di-generate dari admin panel
                 document.getElementById('passage-title').innerText = `Belum Ada Soal ${modulAktif}`;
-                document.getElementById('passage-content').innerHTML = `<div class="p-4 bg-amber-50 text-amber-700 border border-amber-200 rounded-xl text-xs">Materi untuk komponen <strong>${modulAktif}</strong> belum di-generate dari Admin Panel. Silakan generate soal melalui admin terlebih dahulu agar muncul di sini!</div>`;
-                document.getElementById('quiz-container').innerHTML = `<div class="p-4 bg-slate-50 border border-dashed border-slate-200 rounded-xl text-center text-xs text-slate-400">Waiting for database...</div>`;
+                document.getElementById('passage-content').innerHTML = `
+                    <div class="p-5 bg-amber-50 text-amber-700 border border-amber-200 rounded-xl text-xs leading-relaxed">
+                        Materi kuis untuk komponen <strong>${modulAktif}</strong> belum di-generate oleh Admin. 
+                        Silakan buat soal pilar ini terlebih dahulu melalui Admin Panel agar muncul di halaman siswa!
+                    </div>`;
+                document.getElementById('quiz-container').innerHTML = `
+                    <div class="p-6 bg-slate-50 border border-dashed border-slate-200 rounded-xl text-center text-xs text-slate-400">
+                        Menunggu database...
+                    </div>`;
             }
         } else {
             muatMateriKeUI(FALLBACK_DATA);
@@ -124,6 +135,7 @@ function ambilMateriUjian() {
         if (document.getElementById(cb)) document.getElementById(cb).remove();
     };
 
+    // Hancurkan cache CDN/browser menggunakan timestamp unik di setiap request script
     const timestamp = new Date().getTime();
     const script = document.createElement('script');
     script.src = `${SCRIPT_URL}?action=getQuestions&callback=${cb}&_=${timestamp}`;
@@ -137,7 +149,7 @@ function ambilMateriUjian() {
     document.body.appendChild(script);
 }
 
-// RENDER DATA TEXT / TRANSCRIPT KE UI
+// RENDER DATA TEXT / TRANSCRIPT KE UI PANEL KIRI
 function muatMateriKeUI(materi) {
     if (!materi.judul) return;
     document.getElementById('passage-title').innerText = materi.judul;
@@ -146,7 +158,7 @@ function muatMateriKeUI(materi) {
     if (materi.pertanyaan) renderQuiz(materi.pertanyaan, materi.kunci_jawaban);
 }
 
-// GENERATE PILIHAN KUIS INTERAKTIF (BISA UNTUK SEMUA PILAR)
+// GENERATE PILIHAN KUIS RADIO BUTTON DI PANEL KANAN
 function renderQuiz(soalStr, kunciStr) {
     const container = document.getElementById('quiz-container');
     kunciJawabanSistem = kunciStr ? kunciStr.split(',') : [];
@@ -185,7 +197,7 @@ function simpanJawaban(index, nilai) {
     jawabanUserMap[index] = nilai;
 }
 
-// EVALUASI LEMBAR JAWABAN
+// EVALUASI LEMBAR JAWABAN & HITUNG BAND SCORE
 function submitUserAnswers(dipaksaWaktuHabis = false) {
     if (intervalTimer) clearInterval(intervalTimer);
     let skorBenar = 0;
@@ -202,6 +214,7 @@ function submitUserAnswers(dipaksaWaktuHabis = false) {
     document.getElementById('band-score').innerText = bandScore.toFixed(1);
     document.getElementById('correct-fraction').innerText = `Benar ${skorBenar} dari ${totalSoal} Soal`;
 
+    // Tampilkan Modal Hasil Box dengan Transisi Efek Memudar Halus
     const modal = document.getElementById('result-modal');
     const box = document.getElementById('result-box');
     modal.classList.remove('hidden');
@@ -213,12 +226,4 @@ function submitUserAnswers(dipaksaWaktuHabis = false) {
 
 function reloadPage() {
     location.reload();
-}
-```
-
-### 🛠️ Apa yang diperbaiki?
-Coba perhatikan perubahan logika utama pada baris **ke-97**:
-```javascript
-for (let i = data.length - 1; i >= 0; i--) {
-    if (data[i].pilar && data[i].pilar.toUpperCase() === modulAktif.toUpperCase()) { ... }
 }
