@@ -1,4 +1,4 @@
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbylIkpodi-acPclPTGT8zPGEALT4wKpHOubBLQJae-DhdQ3GGiIfM8rHCejO9YEFHPh/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzMKv8zuSA_m_OzqMb-YqkF5N43rbYBerLdRDoe5HXQ6UmBHthRrTNWHbdSGZidsdQu/exec";
 
 document.addEventListener('DOMContentLoaded',  ambilLogDariSpreadsheet);
 
