@@ -1,4 +1,7 @@
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxLB2rES6lBqwuzIHuy8WICfVvO_Wr164xzHqJuh7FphbY4NXZDUqK2nZ_33yPaGNNI/exec";
+// =========================================================================
+// PENTING: SESUAIKAN SCRIPT_URL DENGAN LINK WEB APP APPS SCRIPT ANDA
+// =========================================================================
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxUmoWd4je9H732lLSldBqST9rKwYZmvJJH-fxyl6_S63XJducrrpxKCM5wrpNyQIMg/exec";
 
 let modulAktif = "Reading", kunciJawabanSistem = [], sisaWaktu = 3600, intervalTimer = null, dataLoaded = false;
 let rawKontenArray = [], rawPertanyaanArray = [], jawabanUserMap = {};
@@ -10,20 +13,34 @@ window.addEventListener('DOMContentLoaded', () => {
     inisialisasiFiturGeserPanel(); 
 });
 
+// =========================================================================
+// 1. ENGINE FITUR GESER PANEL (RESIZE WORKSPACE CONTROLLER)
+// =========================================================================
 function inisialisasiFiturGeserPanel() {
     const container = document.getElementById('workspace-container');
     const panelKiri = document.getElementById('panel-kiri');
     const resizer = document.getElementById('panel-resizer');
     let isDragging = false;
-    resizer.addEventListener('mousedown', (e) => { e.preventDefault(); isDragging = true; });
+
+    resizer.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        isDragging = true;
+    });
+
     document.addEventListener('mousemove', (e) => {
         if (!isDragging) return;
-        let newPercent = ( (e.clientX - container.getBoundingClientRect().left) / container.clientWidth ) * 100;
-        if (newPercent >= 25 && newPercent <= 75) panelKiri.style.width = newPercent + '%';
+        let newPercent = ((e.clientX - container.getBoundingClientRect().left) / container.clientWidth) * 100;
+        if (newPercent >= 25 && newPercent <= 75) {
+            panelKiri.style.width = newPercent + '%';
+        }
     });
+
     document.addEventListener('mouseup', () => isDragging = false);
 }
 
+// =========================================================================
+// 2. LOGIKA MANAJEMEN MENU DUAL-MODE (IELTS VS DUOLINGO LEARN)
+// =========================================================================
 function pindahModul(namaModul, durasiDetik) {
     modulAktif = namaModul; sisaWaktu = durasiDetik; dataLoaded = false;
     rawKontenArray = []; rawPertanyaanArray = []; kunciJawabanSistem = []; jawabanUserMap = {};
@@ -57,7 +74,7 @@ function pindahModul(namaModul, durasiDetik) {
         document.getElementById('total-questions-badge').innerText = "INTERACTIVE FLASHCARDS";
         
         timerWidget.innerText = "🦉 Level Up!";
-        timerWidget.className = "text-xs font-extrabold px-3 py-1 bg-emerald-600 text-white rounded shadow animate-bounce";
+        timerWidget.className = "text-xs font-extrabold px-3 py-1 bg-emerald-600 text-white rounded shadow animate-none";
         submitBtnArea.classList.add('hidden');
     } else {
         statusBadge.innerText = "SIMULATION MODE";
@@ -85,6 +102,9 @@ function startTimer() {
     }, 1000);
 }
 
+// =========================================================================
+// 3. KONEKSI DATA DATABASE SPREADSHEET (JSONP METHOD)
+// =========================================================================
 function ambilMateriUjian() {
     document.getElementById('passage-content').innerHTML = '<p class="text-slate-400 italic text-center py-12">Loading fun study session...</p>';
     document.getElementById('quiz-container').innerHTML = '';
@@ -131,6 +151,9 @@ function generateSubNavigations() {
     }
 }
 
+// =========================================================================
+// 4. RENDER ANTARMUKA WORKSPACE PANEL SEBELAH KIRI & KANAN FLASHCARD
+// =========================================================================
 function showSection(index) {
     if (rawKontenArray.length === 0 || !rawKontenArray[index]) return;
     rawKontenArray.forEach((_, i) => {
@@ -154,9 +177,11 @@ function showSection(index) {
         
         if (rawPertanyaanArray[index]) {
             let barisKartu = rawPertanyaanArray[index].split('\n');
-            let deckHTML = `<div class="text-[10px] font-black text-slate-500 tracking-wider uppercase mb-3">Tap cards to flip meaning & speak!</div><div class="grid grid-cols-1 gap-3">`;
+            let deckHTML = `
+            <div class="text-[10px] font-black text-slate-400 tracking-wider uppercase mb-2">Tap cards to flip meaning & speak!</div>
+            <div class="flex flex-col gap-4 w-full pb-6">`;
             
-            barisKartu.forEach((item, kIdx) => {
+            barisKartu.forEach((item) => {
                 if (item.includes('||')) {
                     let part = item.split('||').map(s => s.trim());
                     let kataInggris = part[0] || "Word";
@@ -164,19 +189,21 @@ function showSection(index) {
                     let contohKalimat = part[2] || "";
                     
                     deckHTML += `
-                    <div class="bg-white border-2 border-slate-200 rounded-2xl p-4 shadow-sm hover:border-emerald-400 transition cursor-pointer relative overflow-hidden group" onclick="balikKartuHafalan(this)">
-                        <div class="flex justify-between items-center card-front">
-                            <div>
-                                <span class="bg-emerald-100 text-emerald-800 text-[9px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wide">Vocab Item</span>
-                                <h4 class="text-lg font-black text-slate-800 mt-1">${kataInggris}</h4>
-                                <p class="text-[11px] text-slate-400 mt-1 italic font-medium">🗣️ ${contohKalimat}</p>
+                    <div class="flashcard-wrapper w-full h-32 relative" onclick="balikKartuHafalan(this)">
+                        <div class="flashcard-inner w-full h-full">
+                            <div class="card-front bg-white border-2 border-slate-200 p-5 shadow-sm flex justify-between items-center hover:border-emerald-400 transition duration-200 box-border">
+                                <div class="pr-4 overflow-hidden">
+                                    <span class="bg-emerald-100 text-emerald-800 text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wide">English</span>
+                                    <h4 class="text-base font-black text-slate-800 mt-1 truncate">${kataInggris}</h4>
+                                    <p class="text-xs text-slate-400 mt-1 italic font-medium line-clamp-2">🗣️ ${contohKalimat}</p>
+                                </div>
+                                <button onclick="suaraLafalDuolingo(event, '${kataInggris.replace(/'/g, "\\'")}')" class="w-10 h-10 flex-shrink-0 rounded-full bg-emerald-500 hover:bg-emerald-600 text-white flex items-center justify-center text-sm shadow transition transform active:scale-95">🔊</button>
                             </div>
-                            <button onclick="suaraLafalDuolingo(event, '${kataInggris}')" class="w-8 h-8 rounded-full bg-emerald-500 hover:bg-emerald-600 text-white flex items-center justify-center text-xs shadow transition transform active:scale-95">🔊</button>
-                        </div>
-                        <div class="hidden bg-emerald-950 text-white absolute inset-0 p-4 flex flex-col justify-center items-center text-center card-back transition-all">
-                            <span class="text-[9px] text-emerald-400 font-bold uppercase tracking-widest">INDONESIAN MEANING</span>
-                            <div class="text-xl font-extrabold mt-1">${artiIndo}</div>
-                            <div class="text-[10px] text-emerald-300 italic mt-2">Click anywhere to flip back</div>
+                            <div class="card-back bg-slate-900 border-2 border-slate-800 p-5 shadow-inner flex flex-col justify-center items-center text-center box-border text-white">
+                                <span class="text-[9px] text-emerald-400 font-bold uppercase tracking-widest">INDONESIAN MEANING</span>
+                                <div class="text-base font-black mt-1 tracking-wide text-emerald-100">${artiIndo}</div>
+                                <div class="text-[9px] text-slate-500 mt-2">Click to flip back</div>
+                            </div>
                         </div>
                     </div>`;
                 }
@@ -189,22 +216,23 @@ function showSection(index) {
     }
 }
 
+// =========================================================================
+// 5. ENGINE HALAMAN PEMBALIK INTERAKTIF & AUDIO PLAYBACK
+// =========================================================================
 function balikKartuHafalan(elemen) {
-    const backSide = elemen.querySelector('.card-back');
-    if (backSide.classList.contains('hidden')) {
-        backSide.classList.remove('hidden');
-    } else {
-        backSide.classList.add('hidden');
+    const cardInner = elemen.querySelector('.flashcard-inner');
+    if (cardInner) {
+        cardInner.classList.toggle('flashcard-flipped');
     }
 }
 
 function suaraLafalDuolingo(event, teks) {
-    event.stopPropagation(); // Mencegah kartu membalik saat mengklik tombol suara
+    event.stopPropagation(); 
     if (synthSuara) {
         synthSuara.cancel();
         let u = new SpeechSynthesisUtterance(teks);
         u.lang = 'en-US';
-        u.rate = 0.85; // Sedikit lebih lambat khas Duolingo agar siswa mendengar artikulasi dengan jelas
+        u.rate = 0.85; 
         synthSuara.speak(u);
     }
 }
