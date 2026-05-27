@@ -3,42 +3,18 @@
 // =========================================================================
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz3hyj-S5EfOyEgt9ElpoB5hBgLWX41Ct93xiCfEfN1EWl87JPAVCP8B_KHXfIeXK2T/exec";
 
-// Ringkasan panduan komponen IELTS sesuai permintaan
+// Ringkasan konfigurasi pilar jika data dari database gagal dimuat (Fallback)
 const PILAR_GUIDES = {
-    Listening: {
-        tag: "Listening Section Component",
-        judul: "1. Listening (Mendengarkan)",
-        konten: "<strong>Durasi:</strong> Sekitar 30–40 menit.<br><br><strong>Format:</strong> Kamu akan mendengarkan 4 rekaman audio (monolog dan percakapan) dari penutur asli (native speaker) dengan berbagai aksen (Inggris, Australia, Amerika).<br><br><strong>Soal:</strong> Ada 40 pertanyaan yang harus dijawab sambil mendengarkan audio. Audio hanya diputar satu kali.",
-        info: "4 Rekaman / 40 Soal",
-        quizInfo: "Audio Fill-in / MCQ"
-    },
-    Reading: {
-        tag: "Academic Reading Passage",
-        judul: "2. Reading (Membaca)",
-        konten: "<strong>Durasi:</strong> 60 menit.<br><br><strong>Format:</strong> Kamu harus membaca 3 teks panjang yang diambil dari buku, jurnal, majalah, atau koran.<br><br><strong>Soal:</strong> Ada 40 pertanyaan yang menguji kemampuan kamu dalam mencari informasi spesifik, memahami ide pokok, serta menyimpulkan argumen.",
-        info: "3 Teks / 40 Soal",
-        quizInfo: "True / False / NG"
-    },
-    Writing: {
-        tag: "Writing Section Component",
-        judul: "3. Writing (Menulis)",
-        konten: "<strong>Durasi:</strong> 60 menit.<br><br><strong>Format:</strong> Kamu wajib menyelesaikan 2 tugas menulis (Task 1 dan Task 2).<br><br><strong>Tugas:</strong><br>• <strong>Task 1:</strong> Menjelaskan data visual (grafik, diagram, atau peta untuk tipe Academic) atau menulis surat formal/informal (untuk tipe General Training). Minimal 150 kata.<br>• <strong>Task 2:</strong> Menulis esai argumen atau opini merespons sebuah isu atau topik tertentu. Minimal 250 kata.",
-        info: "2 Tugas / Task 1 & 2",
-        quizInfo: "Essay Response"
-    },
-    Speaking: {
-        tag: "Speaking Interview Component",
-        judul: "4. Speaking (Berbicara)",
-        konten: "<strong>Durasi:</strong> 11–14 menit.<br><br><strong>Format:</strong> Uji wicara tatap muka langsung (one-on-one) dengan seorang penguji penutur asli atau melalui panggilan video (jika memilih tes berbasis komputer).<br><br><strong>Tahapan:</strong> Terdiri dari 3 bagian, mulai dari wawancara santai seputar kehidupan sehari-hari, presentasi singkat mengenai topik acak selama 2 menit, hingga diskusi dua arah yang lebih mendalam dengan penguji.",
-        info: "3 Bagian / Tatap Muka",
-        quizInfo: "Oral Interview"
-    }
+    Listening: { tag: "Listening Section Component", info: "4 Rekaman / 40 Soal", quizInfo: "Audio Fill-in / MCQ" },
+    Reading: { tag: "Academic Reading Passage", info: "3 Teks / 40 Soal", quizInfo: "True / False / NG" },
+    Writing: { tag: "Writing Section Component", info: "2 Tugas / Task 1 & 2", quizInfo: "Essay Response" },
+    Speaking: { tag: "Speaking Interview Component", info: "3 Bagian / Tatap Muka", quizInfo: "Oral Interview" }
 };
 
 const FALLBACK_DATA = {
     pilar: "Reading",
     judul: "The Quantum Frontier: Reimagining Space Propulsion",
-    konten: "Conventional chemical propulsion, while foundational to contemporary space exploration, faces prohibitive limitations when considering interstellar journeys. The logistical quagmire of carrying vast quantities of propellant and the inherent constraints of relativistic velocities render ventures beyond our solar system a distant, almost insurmountable, challenge.\n\nPhysicists and engineers are increasingly turning their gaze towards theoretical constructs that transcend Newton's laws, exploring the manipulation of spacetime itself rather than merely expelling mass. This burgeoning field, often termed 'field propulsion,' seeks to exploit quantum-gravitational phenomena or hypothetical hyperspace metrics, demanding a radical paradigm shift in our understanding of locomotion across astronomical scales.",
+    konten: "Conventional chemical propulsion, while foundational to contemporary space exploration, faces prohibitive limitations when considering interstellar journeys. The logistical quagmire of carrying vast quantities of propellant and the inherent constraints of relativistic velocities render ventures beyond our solar system a distant, almost insurmountable, challenge.",
     pertanyaan: "1. The theoretical exploration into 'field propulsion' is primarily driven by traditional rocket limitations.\n2. Empirical evidence currently exists to support macroscopic exotic matter.",
     kunci_jawaban: "TRUE,FALSE"
 };
@@ -50,14 +26,16 @@ let intervalTimer = null;
 let dataLoaded = false;
 
 window.addEventListener('DOMContentLoaded', () => {
-    pindahModul('Reading', 3600); 
+    pindahModul('Reading', 3600); // Mulai otomatis di Reading saat halaman di-load
 });
 
+// FUNGSI BERPINDAH MENU MODUL (SEKARANG SEMUA PILAR MENGAMBIL DATA DINAMIS)
 function pindahModul(namaModul, durasiDetik) {
     modulAktif = namaModul;
     sisaWaktu = durasiDetik;
     dataLoaded = false;
     
+    // Perbarui visual CSS tombol tab navigasi
     ['Listening', 'Reading', 'Writing', 'Speaking'].forEach(m => {
         const btn = document.getElementById(`nav-${m}`);
         if (btn) {
@@ -69,6 +47,7 @@ function pindahModul(namaModul, durasiDetik) {
         }
     });
 
+    // Update Badge Informasi berdasarkan pilar yang dipilih
     document.getElementById('pilar-badge').innerText = `IELTS ${namaModul}`;
     document.getElementById('panel-tag').innerText = PILAR_GUIDES[namaModul].tag;
     document.getElementById('format-info-badge').innerText = PILAR_GUIDES[namaModul].info;
@@ -76,24 +55,16 @@ function pindahModul(namaModul, durasiDetik) {
     
     startTimer();
 
-    if (namaModul === "Reading") {
-        document.getElementById('passage-title').innerText = "Memuat teks ujian terbaru...";
-        document.getElementById('passage-content').innerHTML = '<p class="text-slate-400 italic text-center py-12">Menghubungkan ke database Google Sheets Anda...</p>';
-        document.getElementById('quiz-container').innerHTML = '';
-        ambilMateriUjian();
-    } else {
-        document.getElementById('passage-title').innerText = PILAR_GUIDES[namaModul].judul;
-        document.getElementById('passage-content').innerHTML = `
-            <div class="bg-blue-50/60 p-6 rounded-2xl border border-blue-100 text-slate-700 leading-relaxed space-y-2">
-                ${PILAR_GUIDES[namaModul].konten}
-            </div>`;
-        document.getElementById('quiz-container').innerHTML = `
-            <div class="p-6 bg-slate-50 border border-dashed border-slate-200 rounded-xl text-center text-xs text-slate-400">
-                Modul interaktif & pengisian jawaban untuk komponen <strong>${namaModul}</strong> sedang dalam tahap integrasi sistem.
-            </div>`;
-    }
+    // Set status loading awal sebelum data dari spreadsheet tiba
+    document.getElementById('passage-title').innerText = `Loading ${namaModul} Material...`;
+    document.getElementById('passage-content').innerHTML = '<p class="text-slate-400 italic text-center py-12">Menghubungkan ke database Google Sheets Anda...</p>';
+    document.getElementById('quiz-container').innerHTML = '';
+
+    // Ambil data dari database spreadsheet untuk pilar aktif
+    ambilMateriUjian();
 }
 
+// LOGIKA TIMER COUNTDOWN
 function startTimer() {
     const display = document.getElementById('timer');
     if (intervalTimer) clearInterval(intervalTimer);
@@ -106,16 +77,17 @@ function startTimer() {
         if (sisaWaktu <= 0) {
             clearInterval(intervalTimer);
             display.innerText = "Time Up!";
-            if (modulAktif === "Reading") submitUserAnswers(true);
+            submitUserAnswers(true);
         } else {
             sisaWaktu--;
         }
     }, 1000);
 }
 
+// AMBIL DATA BERDASARKAN PILAR YANG SEDANG AKTIF + ANTI CACHE
 function ambilMateriUjian() {
     const timeoutFetch = setTimeout(() => {
-        if (!dataLoaded && modulAktif === "Reading") {
+        if (!dataLoaded) {
             console.warn("Jaringan lambat, memuat materi cadangan.");
             muatMateriKeUI(FALLBACK_DATA); 
         }
@@ -123,11 +95,28 @@ function ambilMateriUjian() {
 
     const cb = 'jsonp_kuis_' + Math.round(Math.random() * 100000);
     window[cb] = (data) => {
-        if (modulAktif !== "Reading") return;
         dataLoaded = true;
         clearTimeout(timeoutFetch);
+        
         if (data && data.length > 0) {
-            muatMateriKeUI(data[data.length - 1]);
+            // FILTER DATA: Cari soal paling terbaru (paling bawah di Sheet) yang kolom pilarnya cocok dengan tab yang sedang dibuka siswa
+            let materiCocok = null;
+            for (let i = data.length - 1; i >= 0; i--) {
+                if (data[i].pilar && data[i].pilar.toUpperCase() === modulAktif.toUpperCase()) {
+                    materiCocok = data[i];
+                    break;
+                }
+            }
+
+            // Jika di sheet ditemukan materi yang cocok dengan pilar pilihan, render ke layar
+            if (materiCocok) {
+                muatMateriKeUI(materiCocok);
+            } else {
+                // Jika pilar tersebut belum pernah di-generate sama sekali di admin panel
+                document.getElementById('passage-title').innerText = `Belum Ada Soal ${modulAktif}`;
+                document.getElementById('passage-content').innerHTML = `<div class="p-4 bg-amber-50 text-amber-700 border border-amber-200 rounded-xl text-xs">Materi untuk komponen <strong>${modulAktif}</strong> belum di-generate dari Admin Panel. Silakan generate soal melalui admin terlebih dahulu agar muncul di sini!</div>`;
+                document.getElementById('quiz-container').innerHTML = `<div class="p-4 bg-slate-50 border border-dashed border-slate-200 rounded-xl text-center text-xs text-slate-400">Waiting for database...</div>`;
+            }
         } else {
             muatMateriKeUI(FALLBACK_DATA);
         }
@@ -148,6 +137,7 @@ function ambilMateriUjian() {
     document.body.appendChild(script);
 }
 
+// RENDER DATA TEXT / TRANSCRIPT KE UI
 function muatMateriKeUI(materi) {
     if (!materi.judul) return;
     document.getElementById('passage-title').innerText = materi.judul;
@@ -156,10 +146,11 @@ function muatMateriKeUI(materi) {
     if (materi.pertanyaan) renderQuiz(materi.pertanyaan, materi.kunci_jawaban);
 }
 
+// GENERATE PILIHAN KUIS INTERAKTIF (BISA UNTUK SEMUA PILAR)
 function renderQuiz(soalStr, kunciStr) {
     const container = document.getElementById('quiz-container');
-    kunciJawabanSistem = kunciStr.split(',');
-    const listPertanyaan = soalStr.split('\n');
+    kunciJawabanSistem = kunciStr ? kunciStr.split(',') : [];
+    const listPertanyaan = soalStr ? soalStr.split('\n') : [];
     let htmlKuis = '';
     let nomorSoal = 0;
 
@@ -171,15 +162,15 @@ function renderQuiz(soalStr, kunciStr) {
                 <div class="space-y-2 pt-1">
                     <label class="flex items-center space-x-3 text-xs font-semibold text-slate-600 cursor-pointer hover:text-blue-600 transition">
                         <input type="radio" name="q${nomorSoal}" value="TRUE" onchange="simpanJawaban(${nomorSoal}, 'TRUE')" class="w-4 h-4 text-blue-600 border-slate-300 focus:ring-blue-500">
-                        <span>TRUE</span>
+                        <span>TRUE / YES / OPTION A</span>
                     </label>
                     <label class="flex items-center space-x-3 text-xs font-semibold text-slate-600 cursor-pointer hover:text-blue-600 transition">
                         <input type="radio" name="q${nomorSoal}" value="FALSE" onchange="simpanJawaban(${nomorSoal}, 'FALSE')" class="w-4 h-4 text-blue-600 border-slate-300 focus:ring-blue-500">
-                        <span>FALSE</span>
+                        <span>FALSE / NO / OPTION B</span>
                     </label>
                     <label class="flex items-center space-x-3 text-xs font-semibold text-slate-600 cursor-pointer hover:text-blue-600 transition">
                         <input type="radio" name="q${nomorSoal}" value="NOT GIVEN" onchange="simpanJawaban(${nomorSoal}, 'NOT GIVEN')" class="w-4 h-4 text-blue-600 border-slate-300 focus:ring-blue-500">
-                        <span>NOT GIVEN</span>
+                        <span>NOT GIVEN / OPTION C</span>
                     </label>
                 </div>
             </div>`;
@@ -194,11 +185,8 @@ function simpanJawaban(index, nilai) {
     jawabanUserMap[index] = nilai;
 }
 
+// EVALUASI LEMBAR JAWABAN
 function submitUserAnswers(dipaksaWaktuHabis = false) {
-    if (modulAktif !== "Reading") {
-        alert("Fitur submit jawaban saat ini dikhususkan untuk latihan pilar Reading.");
-        return;
-    }
     if (intervalTimer) clearInterval(intervalTimer);
     let skorBenar = 0;
     const totalSoal = kunciJawabanSistem.length;
@@ -225,4 +213,12 @@ function submitUserAnswers(dipaksaWaktuHabis = false) {
 
 function reloadPage() {
     location.reload();
+}
+```
+
+### 🛠️ Apa yang diperbaiki?
+Coba perhatikan perubahan logika utama pada baris **ke-97**:
+```javascript
+for (let i = data.length - 1; i >= 0; i--) {
+    if (data[i].pilar && data[i].pilar.toUpperCase() === modulAktif.toUpperCase()) { ... }
 }
