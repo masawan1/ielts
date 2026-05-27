@@ -1,44 +1,25 @@
-/* =========================================================================
-   CORE CONFIGURATION & 3D ANIMATION FOR DUOLINGO STYLE FLASHCARDS
-   ========================================================================= */
-
-/* Atur font global aplikasi */
 body {
     font-family: 'Plus Jakarta Sans', sans-serif;
+    -webkit-font-smoothing: antialiased;
 }
 
-/* Mengaktifkan ruang lingkup perspektif 3D pada kontainer luar */
-.flashcard-wrapper {
-    perspective: 1000px;
+/* Custom Scrollbar Styling Clean */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 20px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
 }
 
-/* Kontainer dalam sebagai jangkar rotasi */
-.flashcard-inner {
-    position: relative;
-    width: 100%;
-    height: 100%;
-    transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-    transform-style: preserve-3d;
-}
-
-/* Kondisi class pengetuk yang akan ditambahkan via JavaScript */
-.flashcard-flipped {
-    transform: rotateY(180deg);
-}
-
-/* Set up properti dasar penutup muka depan dan belakang kartu */
-.card-front, .card-back {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    backface-visibility: hidden;
-    -webkit-backface-visibility: hidden;
-    border-radius: 1rem;
-}
-
-/* Memutar muka belakang kartu 180 derajat terlebih dahulu agar memunggungi bagian depan */
-.card-back {
-    transform: rotateY(180deg);
+#panel-resizer {
+    user-select: none;
+    touch-action: none;
 }
