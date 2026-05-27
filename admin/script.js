@@ -1,58 +1,36 @@
 // =========================================================================
 // PENTING: SESUAIKAN SCRIPT_URL DENGAN LINK WEB APP APPS SCRIPT ANDA
 // =========================================================================
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzcyDKJKSzdVXgqoKpssG_GaNHjmKTUGpawktfilLCEyh9GdXQIzRY8Frv0PvP2fZBy/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzG_P1tWZfLc3BpDe69LG3wYs9tN0zJITeuNoBSETwoKIgoVt1_VxxSkf5xP4ihfGw8/exec";
 
 document.addEventListener('DOMContentLoaded', ambilLogDariSpreadsheet);
 
-// Membuka modal dengan animasi transisi memudar halus
 function showMessage(title, text) {
     document.getElementById('msg-title').innerText = title;
     document.getElementById('msg-body').innerText = text;
-    
     const modal = document.getElementById('message-modal');
     const box = document.getElementById('message-box');
-    
     modal.classList.remove('hidden');
-    setTimeout(() => {
-        modal.classList.remove('opacity-0');
-        box.classList.remove('scale-95');
-    }, 50);
+    setTimeout(() => { modal.classList.remove('opacity-0'); box.classList.remove('scale-95'); }, 50);
 }
 
-// Menutup modal dengan animasi mundur
 function closeModal() {
     const modal = document.getElementById('message-modal');
     const box = document.getElementById('message-box');
-    
-    modal.classList.add('opacity-0');
-    box.classList.add('scale-95');
-    setTimeout(() => {
-        modal.classList.add('hidden');
-    }, 300);
+    modal.classList.add('opacity-0'); box.classList.add('scale-95');
+    setTimeout(() => { modal.classList.add('hidden'); }, 300);
 }
 
 function fetchJSONP(url, params = {}) {
     return new Promise((resolve, reject) => {
         const callbackName = 'jsonp_' + Math.round(100000 * Math.random());
-        window[callbackName] = data => { 
-            resolve(data); 
-            delete window[callbackName]; 
-            const el = document.getElementById(callbackName);
-            if (el) el.remove(); 
-        };
+        window[callbackName] = data => { resolve(data); delete window[callbackName]; const el = document.getElementById(callbackName); if (el) el.remove(); };
         const urlObj = new URL(url);
         urlObj.searchParams.set('callback', callbackName);
         for (let key in params) { urlObj.searchParams.set(key, params[key]); }
         const script = document.createElement('script');
-        script.src = urlObj.toString();
-        script.id = callbackName;
-        script.onerror = () => { 
-            reject(); 
-            delete window[callbackName]; 
-            const el = document.getElementById(callbackName);
-            if (el) el.remove(); 
-        };
+        script.src = urlObj.toString(); script.id = callbackName;
+        script.onerror = () => { reject(); delete window[callbackName]; const el = document.getElementById(callbackName); if (el) el.remove(); };
         document.body.appendChild(script);
     });
 }
@@ -61,15 +39,11 @@ function ambilLogDariSpreadsheet() {
     const tbody = document.getElementById('log-output');
     tbody.innerHTML = `<tr><td colspan="3" class="px-6 py-8 text-center text-slate-500 italic">Membaca log produksi dari database spreadsheet...</td></tr>`;
 
-    // Ambil data acak timestamp untuk memecahkan cache browser
-    const timestamp = new Date().getTime();
-
-    fetchJSONP(SCRIPT_URL, { action: 'getQuestions', _ : timestamp })
+    fetchJSONP(SCRIPT_URL, { action: 'getQuestions', _ : new Date().getTime() })
     .then(data => {
         tbody.innerHTML = '';
         if (data && data.length > 0) {
             data.reverse().forEach(item => {
-                // Skema badge warna bervariasi sesuai tipe pilar ujian
                 let pilarBadgeColor = "bg-blue-500/10 text-blue-400 border-blue-500/20";
                 if(item.pilar === "Listening") pilarBadgeColor = "bg-purple-500/10 text-purple-400 border-purple-500/20";
                 if(item.pilar === "Writing") pilarBadgeColor = "bg-amber-500/10 text-amber-400 border-amber-500/20";
@@ -83,10 +57,10 @@ function ambilLogDariSpreadsheet() {
                         </span>
                     </td>
                     <td class="px-6 py-4 font-bold text-slate-100 max-w-sm truncate">${item.judul}</td>
-                    <td class="px-6 py-4 text-right">
-                        <span class="text-[10px] font-bold text-emerald-400 bg-emerald-500/5 border border-emerald-500/10 px-2 py-0.5 rounded">
-                            ✓ Live di User
-                        </span>
+                    <td class="px-6 py-4 text-center">
+                        <button onclick="hapusSoalPerBaris('${item.waktu}')" class="text-rose-400 hover:text-rose-300 font-extrabold bg-rose-500/5 hover:bg-rose-500/10 border border-rose-500/10 px-2.5 py-1 rounded text-[10px] transition">
+                            🗑️ Hapus
+                        </button>
                     </td>
                 </tr>`;
             });
@@ -104,17 +78,40 @@ function generateMateriOtomatis() {
 
     btn.innerText = `Menulis Soal ${pilarTerpilih}... 🤖`;
     btn.disabled = true;
-    btn.className = "w-full bg-slate-800 border border-slate-700 text-slate-400 font-extrabold py-3.5 px-4 rounded-xl cursor-not-allowed text-xs flex items-center justify-center gap-2";
+    btn.className = "w-full bg-slate-800 border border-slate-700 text-slate-400 font-extrabold py-3.5 px-4 rounded-xl cursor-not-allowed text-xs";
 
     fetchJSONP(SCRIPT_URL, { action: 'generateAI', pilar: pilarTerpilih })
     .then(res => {
         showMessage(res.status === "success" ? "Berhasil!" : "Gagal!", res.status === "success" ? `Materi modul ${pilarTerpilih} baru sukses diproduksi AI!` : res.message);
         ambilLogDariSpreadsheet();
     })
-    .catch(() => showMessage('Gagal!', 'Terjadi kesalahan sistem internal atau koneksi internet terputus.'))
+    .catch(() => showMessage('Gagal!', 'Terjadi kesalahan sistem internal.'))
     .finally(() => { 
-        btn.innerText = '✨ Generate Soal Lewat AI'; 
-        btn.disabled = false; 
-        btn.className = "w-full bg-blue-600 hover:bg-blue-500 active:scale-[0.98] text-white font-extrabold py-3.5 px-4 rounded-xl transition duration-200 text-xs shadow-lg shadow-blue-600/20 flex items-center justify-center gap-2";
+        btn.innerText = '✨ Generate Soal Lewat AI'; btn.disabled = false; 
+        btn.className = "w-full bg-blue-600 hover:bg-blue-500 text-white font-extrabold py-3.5 px-4 rounded-xl text-xs shadow-lg";
     });
+}
+
+// EKSEKUSI HAPUS SINGLE DATA ROW
+function hapusSoalPerBaris(waktuKey) {
+    if (!confirm("Apakah Anda yakin ingin menghapus materi ujian ini secara permanen dari database?")) return;
+
+    fetchJSONP(SCRIPT_URL, { action: 'deleteRow', waktu: waktuKey })
+    .then(res => {
+        showMessage(res.status === "success" ? "Dihapus!" : "Gagal!", res.message);
+        ambilLogDariSpreadsheet();
+    })
+    .catch(() => showMessage('Error', 'Gagal terhubung ke server database untuk menghapus data.'));
+}
+
+// EKSEKUSI MASSIVE WIPE DATABASE SOAL
+function hapusSemuaDatabaseSoal() {
+    if (!confirm("⚠️ PERINGATAN KELAS BERBAHAYA!\n\nApakah Anda benar-benar yakin ingin menghapus SELURUH bank soal di spreadsheet? Tindakan ini tidak dapat dibatalkan.")) return;
+
+    fetchJSONP(SCRIPT_URL, { action: 'deleteAll' })
+    .then(res => {
+        showMessage("Database Bersih!", res.message);
+        ambilLogDariSpreadsheet();
+    })
+    .catch(() => showMessage('Error', 'Gagal membersihkan database.'));
 }
