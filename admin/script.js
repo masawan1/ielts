@@ -1,7 +1,7 @@
 // =========================================================================
 // PENTING: SESUAIKAN SCRIPT_URL DENGAN LINK WEB APP APPS SCRIPT ANDA
 // =========================================================================
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzf75t57WIPrZIxZwFkzVlHv1zyAEsL3Q8KzgYpWnTjvXcCvN_bCN3eHQq-QBaF90EF/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz3hyj-S5EfOyEgt9ElpoB5hBgLWX41Ct93xiCfEfN1EWl87JPAVCP8B_KHXfIeXK2T/exec";
 
 document.addEventListener('DOMContentLoaded', ambilLogDariSpreadsheet);
 
