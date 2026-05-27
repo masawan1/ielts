@@ -3,59 +3,107 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IELTS Workspace - Live AI Exam</title>
+    <title>IELTS Platform - Live AI Exam</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        /* Mengatur scrollbar halus pada panel bacaan */
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: #f1f5f9; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col overflow-hidden">
 
-    <header class="bg-white border-b border-slate-200 py-4 px-6 shadow-sm sticky top-0 z-10">
-        <div class="max-w-7xl mx-auto flex justify-between items-center">
-            <h1 class="text-lg font-extrabold tracking-tight">IELTS<span class="text-blue-600">AI-Prep</span></h1>
+    <header class="bg-white border-b border-slate-200 py-4 px-6 shadow-sm flex-shrink-0 z-10">
+        <div class="max-w-7xl mx-auto w-full flex justify-between items-center">
+            <h1 class="text-xl font-bold tracking-tight text-slate-900">
+                IELTS<span class="text-blue-600">AI-Prep</span>
+            </h1>
             <div class="flex items-center gap-4">
-                <span id="pilar-badge" class="text-[10px] font-bold px-3 py-1 bg-blue-50 text-blue-600 rounded-full uppercase tracking-widest">Loading...</span>
-                <span id="timer" class="text-xs font-bold px-3 py-1 bg-rose-50 text-rose-600 rounded-lg shadow-sm animate-pulse">20:00</span>
+                <span id="pilar-badge" class="text-xs font-bold px-4 py-1.5 bg-blue-50 text-blue-600 rounded-lg uppercase tracking-wide">IELTS Reading</span>
             </div>
         </div>
     </header>
 
-    <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
-        <section class="md:col-span-2 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Academic Reading Passage</span>
-            <h2 id="passage-title" class="text-xl font-bold text-slate-900 mt-1 mb-4">Memuat materi ujian...</h2>
-            <div id="passage-content" class="text-slate-600 leading-relaxed text-sm space-y-4">
-                <p>Sedang mengambil materi otentik dari database...</p>
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 grid grid-cols-1 md:grid-cols-3 gap-6 overflow-hidden h-[calc(100vh-73px)]">
+        
+        <section class="md:col-span-2 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col h-full overflow-hidden">
+            <span class="text-[10px] font-bold text-blue-600 uppercase tracking-widest flex-shrink-0">Academic Reading Passage</span>
+            <h2 id="passage-title" class="text-xl font-bold text-slate-900 mt-1 mb-4 flex-shrink-0">Memuat teks ujian terbaru...</h2>
+            
+            <div id="passage-content" class="text-slate-600 leading-relaxed text-sm space-y-4 overflow-y-auto flex-1 pr-2">
+                <p class="text-slate-400 italic text-center py-12">Menghubungkan ke database Google Sheets Anda...</p>
             </div>
         </section>
 
-        <section class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col">
-            <h3 class="text-xs font-bold text-slate-900 uppercase mb-4">Interactive Quiz</h3>
-            <div id="quiz-container" class="flex-1 overflow-y-auto space-y-4 pr-2"></div>
-            <button onclick="submitUserAnswers()" class="w-full mt-6 bg-slate-900 hover:bg-black text-white font-bold py-3 rounded-xl text-xs transition shadow-md">
-                Submit Jawaban
-            </button>
+        <section class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col h-full overflow-hidden">
+            <div class="flex justify-between items-center mb-4 flex-shrink-0 border-b border-slate-100 pb-3">
+                <h3 class="text-sm font-bold text-slate-900">Interactive Quiz</h3>
+                <span class="text-xs text-rose-600 font-bold bg-rose-50 px-2.5 py-1 rounded" id="timer">Time Limit: 20:00</span>
+            </div>
+            
+            <div id="quiz-container" class="flex-1 overflow-y-auto space-y-5 pr-2">
+                </div>
+            
+            <div class="pt-4 border-t border-slate-100 flex-shrink-0 bg-white">
+                <button id="btn-submit" onclick="submitUserAnswers()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl text-xs transition shadow-md">
+                    Submit Answers
+                </button>
+            </div>
         </section>
     </main>
 
+    <div id="result-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden opacity-0 transition-opacity duration-300">
+        <div class="bg-white rounded-3xl max-w-sm w-full mx-4 p-8 text-center shadow-2xl transform scale-95 transition-transform duration-300" id="result-box">
+            <div class="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl font-black">AI</div>
+            
+            <h3 class="text-xl font-extrabold text-slate-900" id="modal-heading">Ujian Selesai!</h3>
+            <p class="text-[11px] text-slate-500 mt-1" id="modal-subheading">Hasil evaluasi lembar jawaban Anda</p>
+            
+            <div class="my-5 py-5 bg-slate-50 rounded-2xl border border-slate-100">
+                <div class="text-5xl font-black text-blue-600" id="band-score">0.0</div>
+                <div class="text-[11px] font-bold text-slate-500 uppercase tracking-widest mt-2" id="correct-fraction">Benar 0 dari 2</div>
+            </div>
+
+            <p class="text-[11px] text-slate-600 leading-relaxed mb-6 px-2">
+                Evaluasi dibuat secara otomatis berdasarkan kecocokan kunci jawaban dengan data real-time di Google Sheets Anda.
+            </p>
+
+            <button onclick="reloadPage()" class="w-full py-3.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition shadow">
+                Selesai & Ulangi Latihan
+            </button>
+        </div>
+    </div>
+
     <script>
-        // GANTI DENGAN URL DEPLOYMENT APPS SCRIPT ANDA
+        // =========================================================================
+        // PENTING: GANTI SCRIPT_URL DI BAWAH INI DENGAN URL WEB APP APPS SCRIPT ANDA
+        // =========================================================================
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwqP3_9F7mRWh99t36b9EwI_ZisH1uGgBCHd8eL_Sg-3uD8tCjX8wH67y7X_N4K10U/exec";
         
-        let kunciJawaban = [];
-        let sisaWaktu = 1200; // 20 Menit
-        let intervalTimer = null;
+        // Data Fallback (Materi Cadangan Instan jika Spreadsheet lambat merespon)
+        const FALLBACK_DATA = {
+            pilar: "Reading",
+            judul: "The Quantum Frontier: Reimagining Space Propulsion",
+            konten: "Conventional chemical propulsion, while foundational to contemporary space exploration, faces prohibitive limitations when considering interstellar journeys. The logistical quagmire of carrying vast quantities of propellant and the inherent constraints of relativistic velocities render ventures beyond our solar system a distant, almost insurmountable, challenge.\n\nPhysicists and engineers are increasingly turning their gaze towards theoretical constructs that transcend Newton's laws, exploring the manipulation of spacetime itself rather than merely expelling mass. This burgeoning field, often termed 'field propulsion,' seeks to exploit quantum-gravitational phenomena or hypothetical hyperspace metrics, demanding a radical paradigm shift in our understanding of locomotion across astronomical scales. This theoretical vanguard posits that future spacecraft might navigate the cosmos by 'surfing' or warping the fabric of reality.\n\nThe practical manifestation of such ambitious concepts, however, presents an unprecedented set of hurdles. Theoretical models, like the infamous Alcubierre warp drive, necessitate the existence and controlled generation of exotic matter possessing negative energy density - a phenomenon not yet observed empirically on a macroscopic scale, though tenuously suggested by effects such as the Casimir force. The energy requirements for even modest spacetime distortions are projected to be astronomically profligate, far exceeding the output of entire planetary civilisations with current technological capabilities. Overcoming these fundamental physics barriers will require breakthroughs of monumental proportion, potentially demanding a new Standard Model of particle physics or the harnessing of heretofore unknown cosmological forces, placing the realisation of genuine interstellar travel within the crucible of distant future science.",
+            pertanyaan: "1. The theoretical exploration into 'field propulsion' is primarily driven by the inability of traditional rockets to overcome the logistical challenges of propellant storage for long-distance interstellar missions.\n2. Empirical evidence currently exists to support the feasibility of generating exotic matter with negative energy density.",
+            kunci_jawaban: "TRUE,FALSE"
+        };
 
-        window.addEventListener('load', () => {
-            fetchData();
+        let kunciJawabanSistem = [];
+        let sisaWaktu = 1200; // 20 Menit dalam detik
+        let intervalTimer = null;
+        let dataLoaded = false;
+
+        window.addEventListener('DOMContentLoaded', () => {
             startTimer();
+            ambilMateriUjian();
         });
 
+        // 1. LOGIKA TIMER AKURAT (COUNTDOWN)
         function startTimer() {
             const display = document.getElementById('timer');
             if (intervalTimer) clearInterval(intervalTimer);
@@ -63,66 +111,151 @@
             intervalTimer = setInterval(() => {
                 let m = Math.floor(sisaWaktu / 60);
                 let s = sisaWaktu % 60;
-                display.innerText = `${m}:${s < 10 ? '0'+s : s}`;
+                
+                let formatWaktu = `${m}:${s < 10 ? '0'+s : s}`;
+                display.innerText = `Time Limit: ${formatWaktu}`;
                 
                 if (sisaWaktu <= 0) {
                     clearInterval(intervalTimer);
-                    display.innerText = "0:00";
-                    submitUserAnswers();
+                    display.innerText = "Time Up!";
+                    submitUserAnswers(true); // Kirim otomatis saat waktu habis
                 } else {
                     sisaWaktu--;
                 }
             }, 1000);
         }
 
-        function fetchData() {
-            const cb = 'cb_' + Math.floor(Math.random()*100000);
+        // 2. KONEKSI DATA BYPASS CORS DENGAN DETEKSI KONEKSI LAMBAT (TIMEOUT 4 DETIK)
+        function ambilMateriUjian() {
+            // Set batas waktu penantian maksimal 4 detik. 
+            // Jika database Google Apps Script lambat merespon, langsung load fallback lokal agar halaman tidak stuck "Loading"
+            const timeoutFetch = setTimeout(() => {
+                if (!dataLoaded) {
+                    console.warn("Jaringan lambat, memuat materi cadangan instan.");
+                    muatMateriKeUI(FALLBACK_DATA);
+                }
+            }, 4000);
+
+            const cb = 'jsonp_kuis_' + Math.round(Math.random() * 100000);
             window[cb] = (data) => {
-                const item = data[data.length - 1];
-                document.getElementById('pilar-badge').innerText = item.pilar || "Reading";
-                document.getElementById('passage-title').innerText = item.judul;
-                document.getElementById('passage-content').innerHTML = item.konten.split('\n\n').map(p => `<p>${p}</p>`).join('');
-                renderQuiz(item.pertanyaan, item.kunci_jawaban);
+                dataLoaded = true;
+                clearTimeout(timeoutFetch); // Batalkan timeout
+                if (data && data.length > 0) {
+                    muatMateriKeUI(data[data.length - 1]);
+                } else {
+                    muatMateriKeUI(FALLBACK_DATA);
+                }
                 delete window[cb];
+                const scriptNode = document.getElementById(cb);
+                if (scriptNode) scriptNode.remove();
             };
-            const s = document.createElement('script');
-            s.src = `${SCRIPT_URL}?action=getQuestions&callback=${cb}`;
-            document.body.appendChild(s);
+
+            const script = document.createElement('script');
+            script.src = `${SCRIPT_URL}?action=getQuestions&callback=${cb}`;
+            script.id = cb;
+            script.onerror = () => {
+                dataLoaded = true;
+                clearTimeout(timeoutFetch);
+                muatMateriKeUI(FALLBACK_DATA);
+            };
+            document.body.appendChild(script);
         }
 
-        function renderQuiz(soal, kunci) {
+        // 3. RENDER DATA KE UI
+        function muatMateriKeUI(materi) {
+            document.getElementById('passage-title').innerText = materi.judul || 'Untitled Passage';
+            
+            // Render paragraf bacaan dengan rapi
+            const paragraphs = materi.konten.split('\n\n');
+            document.getElementById('passage-content').innerHTML = paragraphs.map(p => `<p class="mb-4 text-justify leading-relaxed">${p}</p>`).join('');
+            
+            renderQuiz(materi.pertanyaan, materi.kunci_jawaban);
+        }
+
+        // 4. GENERATE SOAL (TRUE / FALSE / NOT GIVEN) DENGAN BULATAN RADIO ASLI
+        function renderQuiz(soalStr, kunciStr) {
             const container = document.getElementById('quiz-container');
-            kunciJawaban = kunci.split(',');
-            soal.split('\n').forEach((s, i) => {
-                if(s.trim()) {
-                    container.innerHTML += `
-                    <div class="p-3 border border-slate-100 rounded-lg text-xs" data-index="${i}">
-                        <p class="font-semibold mb-2">${s}</p>
-                        <div class="grid grid-cols-3 gap-1">
-                            <button onclick="pilih(this, 'TRUE')" class="p-1.5 border rounded hover:bg-blue-50 transition">TRUE</button>
-                            <button onclick="pilih(this, 'FALSE')" class="p-1.5 border rounded hover:bg-blue-50 transition">FALSE</button>
-                            <button onclick="pilih(this, 'NOT GIVEN')" class="p-1.5 border rounded hover:bg-blue-50 transition">N.G</button>
+            kunciJawabanSistem = kunciStr.split(',');
+            const listPertanyaan = soalStr.split('\n');
+            
+            let htmlKuis = '';
+            let nomorSoal = 0;
+
+            listPertanyaan.forEach((item) => {
+                if(item.trim()) {
+                    htmlKuis += `
+                    <div class="p-5 bg-slate-50 border border-slate-200 rounded-xl space-y-3 shadow-sm" data-index="${nomorSoal}">
+                        <p class="font-semibold text-xs leading-relaxed text-slate-800">${item}</p>
+                        <div class="space-y-2 pt-1">
+                            <label class="flex items-center space-x-3 text-xs font-semibold text-slate-600 cursor-pointer hover:text-blue-600 transition">
+                                <input type="radio" name="q${nomorSoal}" value="TRUE" onchange="simpanJawaban(${nomorSoal}, 'TRUE')" class="w-4 h-4 text-blue-600 border-slate-300 focus:ring-blue-500">
+                                <span>TRUE</span>
+                            </label>
+                            <label class="flex items-center space-x-3 text-xs font-semibold text-slate-600 cursor-pointer hover:text-blue-600 transition">
+                                <input type="radio" name="q${nomorSoal}" value="FALSE" onchange="simpanJawaban(${nomorSoal}, 'FALSE')" class="w-4 h-4 text-blue-600 border-slate-300 focus:ring-blue-500">
+                                <span>FALSE</span>
+                            </label>
+                            <label class="flex items-center space-x-3 text-xs font-semibold text-slate-600 cursor-pointer hover:text-blue-600 transition">
+                                <input type="radio" name="q${nomorSoal}" value="NOT GIVEN" onchange="simpanJawaban(${nomorSoal}, 'NOT GIVEN')" class="w-4 h-4 text-blue-600 border-slate-300 focus:ring-blue-500">
+                                <span>NOT GIVEN</span>
+                            </label>
                         </div>
                     </div>`;
+                    nomorSoal++;
                 }
             });
+            container.innerHTML = htmlKuis;
         }
 
-        function pilih(el, val) {
-            el.parentElement.querySelectorAll('button').forEach(b => b.classList.remove('bg-blue-600', 'text-white'));
-            el.classList.add('bg-blue-600', 'text-white');
-            el.parentElement.parentElement.dataset.answer = val;
+        // 5. PENYIMPANAN JAWABAN USER
+        const jawabanUserMap = {};
+        function simpanJawaban(index, nilai) {
+            jawabanUserMap[index] = nilai;
         }
 
-        function submitUserAnswers() {
+        // 6. HITUNG SKOR & TAMPILKAN HASIL VIA CUSTOM MODAL
+        function submitUserAnswers(dipaksaWaktuHabis = false) {
             if (intervalTimer) clearInterval(intervalTimer);
-            let skor = 0;
-            document.querySelectorAll('#quiz-container > div').forEach(div => {
-                const jawabanUser = div.dataset.answer;
-                const index = div.dataset.index;
-                if(jawabanUser === kunciJawaban[index].trim()) skor++;
-            });
-            alert("Ujian Selesai! Skor Anda: " + skor + " dari " + kunciJawaban.length);
+            let skorBenar = 0;
+            const totalSoal = kunciJawabanSistem.length;
+
+            for (let i = 0; i < totalSoal; i++) {
+                const jawabanUser = jawabanUserMap[i];
+                const kunciAsli = kunciJawabanSistem[i] ? kunciJawabanSistem[i].trim().toUpperCase() : "";
+
+                if(jawabanUser && jawabanUser.toUpperCase() === kunciAsli) {
+                    skorBenar++;
+                }
+            }
+
+            // Simulasi konversi Band Score IELTS sederhana
+            let bandScore = 4.0;
+            if (skorBenar === totalSoal && totalSoal > 0) bandScore = 9.0;
+            else if (skorBenar > 0) bandScore = 6.5;
+
+            // Sesuaikan teks heading modal
+            if (dipaksaWaktuHabis) {
+                document.getElementById('modal-heading').innerText = "Waktu Habis!";
+                document.getElementById('modal-subheading').innerText = "Sistem otomatis mengumpulkan jawaban Anda";
+            } else {
+                document.getElementById('modal-heading').innerText = "Ujian Selesai!";
+                document.getElementById('modal-subheading').innerText = "Estimasi Band Score Anda telah dihitung";
+            }
+
+            document.getElementById('band-score').innerText = bandScore.toFixed(1);
+            document.getElementById('correct-fraction').innerText = `Benar ${skorBenar} dari ${totalSoal} Soal`;
+
+            // Tampilkan Modal dengan Animasi Transisi Halus
+            const modal = document.getElementById('result-modal');
+            const box = document.getElementById('result-box');
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                box.classList.remove('scale-95');
+            }, 50);
+        }
+
+        function reloadPage() {
             location.reload();
         }
     </script>
