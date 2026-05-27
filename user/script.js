@@ -1,5 +1,5 @@
 // GANTI DENGAN URL WEB APP GOOGLE APPS SCRIPT KAMU SETELAH DEPLOY
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzhVw7vpyIK_KvZ37n0HfM1jeF-VO6HLNGZGKU6ZXzXjoGTF1dF9ByjrS46cZg0wWsG/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwBkAqX50tA0epVeCdsZZvx_WhnGM2cL-tkl5tPDRH-St0sJfqQ4ULgP12dfcIlzKha/exec";
 let kunciJawabanSistem = [];
 
 window.addEventListener('DOMContentLoaded', () => {
