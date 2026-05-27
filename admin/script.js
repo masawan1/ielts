@@ -1,121 +1,79 @@
 // =========================================================================
-// CONFIGURATION
+// PENTING: SESUAIKAN SCRIPT_URL DENGAN LINK WEB APP APPS SCRIPT ANDA
 // =========================================================================
-// GANTI DENGAN URL WEB APP GOOGLE APPS SCRIPT KAMU SETELAH DEPLOY ULANG (VERSI BARU)
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxwJG0wHd948H_26VWhNcjWtDQs-CxE24nAN48A4dAxa8i_bZarfeHIsp9vOYSV101s/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbysfhxwG6PTzWOCa8pKg8b8E8EgB933YUQU6UWqvPQcGQGXQd7wlvlch3j5NsY3gbgq/exec";
 
-// =========================================================================
-// DOM EVENTS
-// =========================================================================
-document.addEventListener('DOMContentLoaded', () => {
-    console.log("IELTS AI Admin Dashboard Ready.");
-    // Ambil log materi langsung dari Google Spreadsheet saat halaman pertama kali dimuat
-    ambilLogDariSpreadsheet();
-});
+document.addEventListener('DOMContentLoaded', ambilLogDariSpreadsheet);
 
-// =========================================================================
-// CORE FUNCTIONS
-// =========================================================================
+function showMessage(title, text) {
+    document.getElementById('msg-title').innerText = title;
+    document.getElementById('msg-body').innerText = text;
+    document.getElementById('message-modal').classList.remove('hidden');
+}
 
-/**
- * Mengambil seluruh data materi yang ada di Google Spreadsheet secara real-time
- * dan merendernya ke dalam tabel Log Produksi.
- */
-function ambilLogDariSpreadsheet() {
-    const tbody = document.getElementById('log-output');
-    if (!tbody) return;
-
-    // Tampilkan efek loading sementara menunggu data dari Google Sheets
-    tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: #64748b; padding: 20px;">Menyinkronkan dengan Google Sheets... 🔄</td></tr>`;
-
-    // Melakukan request GET ke Apps Script untuk menarik semua data baris
-    fetch(`${SCRIPT_URL}?action=getQuestions`)
-    .then(res => res.json())
-    .then(data => {
-        tbody.innerHTML = ''; // Bersihkan tulisan loading
-
-        if (data && data.length > 0) {
-            // Balik urutan data (LIFO) agar soal yang paling baru dibuat AI muncul di baris paling atas
-            const dataTerbalik = data.reverse();
-            
-            dataTerbalik.forEach(item => {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td><strong>${item.pilar || 'Reading'}</strong></td>
-                    <td>${item.judul || 'Tanpa Judul'}</td>
-                    <td><span style="color: #10b981; font-weight: bold;">✓ Live di Web User</span></td>
-                `;
-                tbody.appendChild(row);
-            });
-        } else {
-            tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: #64748b; padding: 20px;">Belum ada riwayat soal di Spreadsheet. Klik tombol di atas untuk membuat!</td></tr>`;
-        }
-    })
-    .catch(err => {
-        console.error("Gagal memuat log:", err);
-        tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: #ef4444; font-weight: bold; padding: 20px;">Gagal terhubung dengan database Google Sheets. Pastikan URL Apps Script sudah benar.</td></tr>`;
+function fetchJSONP(url, params = {}) {
+    return new Promise((resolve, reject) => {
+        const callbackName = 'jsonp_' + Math.round(100000 * Math.random());
+        window[callbackName] = data => { 
+            resolve(data); 
+            delete window[callbackName]; 
+            document.getElementById(callbackName).remove(); 
+        };
+        const urlObj = new URL(url);
+        urlObj.searchParams.set('callback', callbackName);
+        for (let key in params) { urlObj.searchParams.set(key, params[key]); }
+        const script = document.createElement('script');
+        script.src = urlObj.toString();
+        script.id = callbackName;
+        script.onerror = () => { 
+            reject(); 
+            delete window[callbackName]; 
+            document.getElementById(callbackName).remove(); 
+        };
+        document.body.appendChild(script);
     });
 }
 
-/**
- * Memicu Google Apps Script dan AI Gemini untuk membuat soal IELTS baru
- */
+function ambilLogDariSpreadsheet() {
+    const tbody = document.getElementById('log-output');
+    tbody.innerHTML = `<tr><td colspan="3" class="px-6 py-6 text-center text-slate-400">Loading log database...</td></tr>`;
+
+    fetchJSONP(SCRIPT_URL, { action: 'getQuestions' })
+    .then(data => {
+        tbody.innerHTML = '';
+        if (data && data.length > 0) {
+            data.reverse().forEach(item => {
+                tbody.innerHTML += `<tr>
+                    <td class="px-6 py-4 font-bold text-blue-600">${item.pilar || 'Reading'}</td>
+                    <td class="px-6 py-4 font-semibold text-slate-900">${item.judul}</td>
+                    <td class="px-6 py-4 text-emerald-600 font-bold">✓ Live di Web User</td>
+                </tr>`;
+            });
+        } else {
+            tbody.innerHTML = `<tr><td colspan="3" class="px-6 py-6 text-center text-slate-400">Database kosong.</td></tr>`;
+        }
+    }).catch(() => {
+        tbody.innerHTML = `<tr><td colspan="3" class="px-6 py-6 text-center text-rose-500">Gagal terhubung ke database spreadsheet.</td></tr>`;
+    });
+}
+
 function generateMateriOtomatis() {
     const btn = document.getElementById('btn-generate-ai');
-    const pilarValue = document.getElementById('pilar').value;
-    
-    // Validasi pilihan pilar
-    if (!pilarValue) {
-        alert("Silakan pilih Pilar IELTS terlebih dahulu!");
-        return;
-    }
-    
-    // Mengubah state tombol saat loading
-    btn.innerText = 'AI sedang mengarang artikel & kuis standar Cambridge... 🤖';
+    // Ambil nilai pilar yang dipilih dari dropdown menu
+    const pilarTerpilih = document.getElementById('select-pilar').value;
+
+    btn.innerText = `Menulis Soal ${pilarTerpilih}... 🤖`;
     btn.disabled = true;
 
-    // Struktur data yang dikirim ke Google Apps Script
-    const payload = {
-        action: 'generateAI',
-        pilar: pilarValue
-    };
-
-    // Menggunakan trik text/plain untuk melewati proteksi CORS di browser saat di-host di GitHub Pages
-    fetch(SCRIPT_URL, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'text/plain;charset=utf-8'
-        },
-        body: JSON.stringify(payload)
+    // Mengirimkan pilar pilihan ke Apps Script agar AI membaca instruksi pilar tersebut
+    fetchJSONP(SCRIPT_URL, { action: 'generateAI', pilar: pilarTerpilih })
+    .then(res => {
+        showMessage(res.status === "success" ? "Berhasil!" : "Gagal!", res.status === "success" ? `Berhasil membuat materi ${pilarTerpilih} baru!` : res.message);
+        ambilLogDariSpreadsheet();
     })
-    .then(res => res.text())
-    .then(text => {
-        try {
-            const response = JSON.parse(text);
-            
-            if (response.status === "success") {
-                alert('Sukses! AI telah berhasil memproduksi soal IELTS baru ke Spreadsheet.');
-                // Ambil ulang data dari Spreadsheet agar tabel log langsung ter-update secara real-time
-                ambilLogDariSpreadsheet();
-            } else {
-                alert('Gagal membuat soal otomatis: ' + (response.message || 'Error internal pada server AI.'));
-                console.error("AI Error Details:", response.message);
-            }
-        } catch (e) {
-            // Mengatasi kondisi jika Apps Script sukses input data ke Sheets namun terkena bypass CORS redirect
-            alert('Permintaan berhasil dikirim ke Google Apps Script!\n\nSistem sedang menulis ke database. Log tabel akan diperbarui otomatis dalam beberapa detik.');
-            
-            // Berikan jeda 4 detik lalu lakukan refresh log otomatis
-            setTimeout(ambilLogDariSpreadsheet, 4000);
-        }
-    })
-    .catch(err => {
-        console.error("Fetch Network Error:", err);
-        alert('Terjadi kendala koneksi API atau masalah sinkronisasi CORS.');
-    })
-    .finally(() => {
-        // Mengembalikan state tombol ke semula
-        btn.innerText = '✨ Generate Soal Baru Lewat AI';
-        btn.disabled = false;
+    .catch(() => showMessage('Error', 'Gagal memanggil API database.'))
+    .finally(() => { 
+        btn.innerText = '✨ Generate Soal Lewat AI'; 
+        btn.disabled = false; 
     });
 }
