@@ -1,4 +1,4 @@
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyVZWXXoNVFSIlLiKWaWE0PsWjr-XSmydVNVO-1JNy4bZaAwtiDI4r9uElk_W7oLoSM/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzIZOP12BW0toUZSlU1VO79Rb3QUj39OgdwQGdfpbvW3qFuByFfPcYKN4cpNkBlLgxW/exec";
 
 let modulAktif = "Reading", kunciJawabanSistem = [], sisaWaktu = 3600, intervalTimer = null, dataLoaded = false;
 let rawKontenArray = [], rawPertanyaanArray = [], jawabanUserMap = {};
