@@ -2,7 +2,7 @@
 // CONFIGURATION
 // =========================================================================
 // GANTI DENGAN URL WEB APP GOOGLE APPS SCRIPT KAMU SETELAH DEPLOY ULANG (VERSI BARU)
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyypdYPZmGiWMoWFP5A_bXGRvbKINYFUxOKM10OR3dMlAdQ3TaQklZc3c5O2wGfu8wG/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxwJG0wHd948H_26VWhNcjWtDQs-CxE24nAN48A4dAxa8i_bZarfeHIsp9vOYSV101s/exec";
 
 // =========================================================================
 // DOM EVENTS
