@@ -125,10 +125,9 @@
             }, 1000);
         }
 
-        // 2. KONEKSI DATA BYPASS CORS DENGAN DETEKSI KONEKSI LAMBAT (TIMEOUT 4 DETIK)
+        // 2. KONEKSI DATA BYPASS CORS DENGAN DETEKSI KONEKSI LAMBAT & ANTI-CACHE (TIMESTAMP)
         function ambilMateriUjian() {
             // Set batas waktu penantian maksimal 4 detik. 
-            // Jika database Google Apps Script lambat merespon, langsung load fallback lokal agar halaman tidak stuck "Loading"
             const timeoutFetch = setTimeout(() => {
                 if (!dataLoaded) {
                     console.warn("Jaringan lambat, memuat materi cadangan instan.");
@@ -141,6 +140,7 @@
                 dataLoaded = true;
                 clearTimeout(timeoutFetch); // Batalkan timeout
                 if (data && data.length > 0) {
+                    // MENGAMBIL BARIS PALING TERAKHIR (DATA TERBARU DI SHEET)
                     muatMateriKeUI(data[data.length - 1]);
                 } else {
                     muatMateriKeUI(FALLBACK_DATA);
@@ -150,9 +150,12 @@
                 if (scriptNode) scriptNode.remove();
             };
 
+            // Trik Sakti Penghancur Cache: Menambahkan &_=[TIMESTAMP] agar browser selalu meminta data paling baru
+            const timestamp = new Date().getTime();
             const script = document.createElement('script');
-            script.src = `${SCRIPT_URL}?action=getQuestions&callback=${cb}`;
+            script.src = `${SCRIPT_URL}?action=getQuestions&callback=${cb}&_=${timestamp}`;
             script.id = cb;
+            
             script.onerror = () => {
                 dataLoaded = true;
                 clearTimeout(timeoutFetch);
@@ -163,6 +166,7 @@
 
         // 3. RENDER DATA KE UI
         function muatMateriKeUI(materi) {
+            document.getElementById('pilar-badge').innerText = `IELTS ${materi.pilar || 'Reading'}`;
             document.getElementById('passage-title').innerText = materi.judul || 'Untitled Passage';
             
             // Render paragraf bacaan dengan rapi
