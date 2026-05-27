@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IELTS Generator - Admin AI Control Panel</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header class="admin-header">
+        <div class="header-container">
+            <h1>IELTS AI Generator Admin</h1>
+            <span class="status-badge">Sistem Otomatis Aktif</span>
+        </div>
+    </header>
+
+    <main class="admin-container">
+        <!-- Sidebar Navigation -->
+        <aside class="admin-sidebar">
+            <nav>
+                <ul>
+                    <li><a href="#overview" class="active">AI Generator</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Main Content Area -->
+        <section class="admin-content">
+            <div class="card">
+                <h2>Generate Materi Ujian Otomatis (Tanpa Manusia)</h2>
+                <p class="subtitle">Cukup pilih pilar IELTS, lalu biarkan AI membuatkan artikel akademik tingkat tinggi, kuis, beserta kunci jawabannya langsung ke Spreadsheet.</p>
+                
+                <div class="form-group">
+                    <label for="pilar">Pilih Pilar IELTS yang Ingin Dibuat</label>
+                    <select id="pilar">
+                        <option value="Reading">Reading Matrix (Split-Screen & Kuis)</option>
+                    </select>
+                </div>
+
+                <button type="button" class="btn btn-primary" id="btn-generate-ai" onclick="generateMateriOtomatis()">
+                    ✨ Generate Soal Baru Lewat AI
+                </button>
+            </div>
+
+            <div class="card table-card">
+                <h2>Log Produksi Soal AI (Real-time dari Spreadsheet)</h2>
+                <div class="table-responsive">
+                    <table id="tabel-materi">
+                        <thead>
+                            <tr>
+                                <th>Pilar</th>
+                                <th>Judul Artikel Buatan AI</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="log-output">
+                            <!-- Data dinamis akan muncul di sini -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>

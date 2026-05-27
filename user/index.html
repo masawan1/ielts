@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IELTS Platform - Live AI Exam</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header class="user-header">
+        <div class="container navbar">
+            <h1 class="logo">IELTS<span>AI-Prep</span></h1>
+            <div class="user-meta">
+                <span class="target-badge" id="pilar-badge">Loading Exam...</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="container workspace">
+        <!-- Panel Kiri: Konten Bacaan Buatan AI -->
+        <section class="panel panel-left">
+            <div class="panel-header">
+                <span class="tag">Academic Reading Passage</span>
+                <h2 id="passage-title">Memuat teks ujian terbaru...</h2>
+            </div>
+            <div class="panel-body" id="passage-content">
+                <p>Sedang mengambil materi otentik hasil generasi AI dari database...</p>
+            </div>
+        </section>
+
+        <!-- Panel Kanan: Kuis Dinamis -->
+        <section class="panel panel-right">
+            <div class="panel-header test-controls">
+                <h3>Interactive Quiz</h3>
+                <span class="timer">Time Limit: 20:00</span>
+            </div>
+            <div class="panel-body">
+                <div id="quiz-container">
+                    <!-- Soal True/False/Not Given buatan AI akan di-render di sini oleh JavaScript -->
+                </div>
+                <button type="button" class="btn-submit" id="btn-submit-user" onclick="submitUserAnswers()">Submit Answers</button>
+            </div>
+        </section>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>
