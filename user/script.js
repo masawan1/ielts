@@ -1,3 +1,6 @@
+// =========================================================================
+// PENTING: SESUAIKAN SCRIPT_URL DENGAN LINK WEB APP APPS SCRIPT ANDA
+// =========================================================================
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzcyDKJKSzdVXgqoKpssG_GaNHjmKTUGpawktfilLCEyh9GdXQIzRY8Frv0PvP2fZBy/exec";
 
 let modulAktif = "Reading", kunciJawabanSistem = [], sisaWaktu = 3600, intervalTimer = null, dataLoaded = false;
@@ -7,17 +10,14 @@ let mediaRecorder = null, audioChunks = [], sedangMerekam = false, recordedBlobs
 
 window.addEventListener('DOMContentLoaded', () => {
     pindahModul('Reading', 3600);
-    inisialisasiFiturGeserPanel(); // Aktifkan fungsi drag panel pasca load
+    inisialisasiFiturGeserPanel(); 
 });
 
-// =========================================================================
-// LOGIKA SAKTI: PENGGESER PANEL REAL-TIME (RESIZE CONTROLLER)
-// =========================================================================
+// FITUR RESIZE DRAG PANEL
 function inisialisasiFiturGeserPanel() {
     const container = document.getElementById('workspace-container');
     const panelKiri = document.getElementById('panel-kiri');
     const resizer = document.getElementById('panel-resizer');
-
     let isDragging = false;
 
     resizer.addEventListener('mousedown', function (e) {
@@ -28,14 +28,10 @@ function inisialisasiFiturGeserPanel() {
 
     document.addEventListener('mousemove', function (e) {
         if (!isDragging) return;
-
-        // Hitung persentase posisi kursor terhadap lebar layar kontainer workspace
         const containerWidth = container.clientWidth;
         const currentLeftX = e.clientX - container.getBoundingClientRect().left;
-        
         let newWidthPercentage = (currentLeftX / containerWidth) * 100;
 
-        // Batasi geseran minimal 25% dan maksimal 75% agar layout tidak rusak hancur
         if (newWidthPercentage >= 25 && newWidthPercentage <= 75) {
             panelKiri.style.width = newWidthPercentage + '%';
         }
@@ -127,12 +123,13 @@ function showSection(index) {
     let textHTML = rawKontenArray[index].split('\n\n').map(p => `<p class="mb-4 text-justify leading-relaxed">${p}</p>`).join('');
 
     if (modulAktif === "Listening") {
+        // PERBAIKAN UTAMA: Mengoper angka INDEKS saja, bukan string teks mentah, agar aman dari error syntax string
         contentArea.innerHTML = `
             <div class="bg-slate-900 text-white p-5 rounded-xl border border-slate-800 shadow-lg text-center space-y-3 max-w-sm mx-auto my-4">
                 <div class="text-[10px] font-bold uppercase tracking-wider text-blue-400">Audio Stream: Part ${index + 1}</div>
                 <div class="text-3xl">🎧</div>
                 <div class="pt-1 flex justify-center gap-2">
-                    <button onclick="kontrolAudio('play', \`${rawKontenArray[index].replace(/"/g, '\\"')}\`)" id="btn-play" class="bg-blue-600 hover:bg-blue-500 font-bold px-4 py-2 rounded text-xs transition">▶ Play Part ${index + 1}</button>
+                    <button onclick="kontrolAudio('play', ${index})" id="btn-play" class="bg-blue-600 hover:bg-blue-500 font-bold px-4 py-2 rounded text-xs transition">▶ Play Part ${index + 1}</button>
                     <button onclick="kontrolAudio('stop')" class="bg-slate-800 hover:bg-slate-700 font-bold px-4 py-2 rounded text-xs transition text-slate-400">Stop</button>
                 </div>
                 <div id="audio-status" class="text-[9px] text-slate-500">Audio only plays once.</div>
@@ -201,18 +198,51 @@ function showInteractiveInput(index) {
     }
 }
 
-function kontrolAudio(aksi, teks) {
+// MANAGEMENT ENGINE AUDIO SUARA (MIMIC AUDIO STREAM)
+function kontrolAudio(aksi, pilarIndex = 0) {
     const statusText = document.getElementById('audio-status');
     const btnPlay = document.getElementById('btn-play');
+    
     if (aksi === 'play') {
-        if (synthSuara.paused && sedangDiputar) { synthSuara.resume(); return; }
+        if (synthSuara.paused && sedangDiputar) { 
+            synthSuara.resume(); 
+            if(statusText) statusText.innerText = "Status: Playing audio stream...";
+            return; 
+        }
+        
         synthSuara.cancel();
-        utteranceSuara = new SpeechSynthesisUtterance(teks.replace(/###/g, ''));
-        utteranceSuara.lang = 'en-US'; utteranceSuara.rate = 0.95;
-        utteranceSuara.onstart = () => { sedangDiputar = true; btnPlay.innerText = "⏸ Pause"; };
-        utteranceSuara.onend = () => { sedangDiputar = false; btnPlay.innerText = "Locked"; btnPlay.disabled = true; btnPlay.className = "bg-slate-800 text-slate-600 px-4 py-2 rounded text-xs cursor-not-allowed"; };
+        
+        // Mengambil teks transkrip langsung dari memori array internal berdasarkan indeksnya
+        let targetTeks = rawKontenArray[pilarIndex] ? rawKontenArray[pilarIndex] : "";
+        let cleanedText = targetTeks.replace(/###/g, '').replace(/<[^>]*>/g, '');
+        
+        utteranceSuara = new SpeechSynthesisUtterance(cleanedText);
+        utteranceSuara.lang = 'en-US'; 
+        utteranceSuara.rate = 0.95;
+        
+        utteranceSuara.onstart = () => { 
+            sedangDiputar = true; 
+            if(btnPlay) btnPlay.innerText = "⏸ Pause"; 
+            if(statusText) statusText.innerText = "Status: Playing audio stream...";
+        };
+        
+        utteranceSuara.onend = () => { 
+            sedangDiputar = false; 
+            if(btnPlay) {
+                btnPlay.innerText = "Locked"; 
+                btnPlay.disabled = true; 
+                btnPlay.className = "bg-slate-800 text-slate-600 px-4 py-2 rounded text-xs cursor-not-allowed"; 
+            }
+            if(statusText) statusText.innerText = "Status: Audio finished.";
+        };
+        
         synthSuara.speak(utteranceSuara);
-    } else if (aksi === 'stop') { synthSuara.cancel(); sedangDiputar = false; if(btnPlay) btnPlay.innerText = "▶ Play"; }
+    } else if (aksi === 'stop') { 
+        synthSuara.cancel(); 
+        sedangDiputar = false; 
+        if(btnPlay) btnPlay.innerText = "▶ Play Part " + (pilarIndex + 1); 
+        if(statusText) statusText.innerText = "Status: Audio stopped.";
+    }
 }
 
 function simpanObjekAnswer(id, val, btn) {
