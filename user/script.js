@@ -11,7 +11,6 @@ const PILAR_GUIDES = {
     Speaking: { tag: "Speaking Interview Component", info: "3 Bagian / Tatap Muka", quizInfo: "Oral Interview" }
 };
 
-// Data cadangan lokal khusus jika koneksi ke Google Sheets terputus/lambat
 const FALLBACK_DATA = {
     pilar: "Reading",
     judul: "The Quantum Frontier: Reimagining Space Propulsion",
@@ -26,17 +25,25 @@ let sisaWaktu = 3600;
 let intervalTimer = null;
 let dataLoaded = false;
 
-// Jalankan otomatis saat dokumen HTML selesai dimuat
+// Variabel Pengendali Fitur Suara (Text-to-Speech) untuk Listening
+let synthSuara = window.speechSynthesis;
+let utteranceSuara = null;
+let sedangDiputar = false;
+
 window.addEventListener('DOMContentLoaded', () => {
     pindahModul('Reading', 3600); 
 });
 
-// FUNGSI BERPINDAH MENU MODUL & AMBIL DATA DINAMIS
+// FUNGSI BERPINDAH MENU MODUL
 function pindahModul(namaModul, durasiDetik) {
     modulAktif = namaModul;
     sisaWaktu = durasiDetik;
     dataLoaded = false;
     
+    // Hentikan suara secara paksa jika siswa pindah pilar saat audio masih menyala
+    if (synthSuara) synthSuara.cancel();
+    sedangDiputar = false;
+
     // Perbarui visual CSS tombol tab navigasi pilar yang aktif
     ['Listening', 'Reading', 'Writing', 'Speaking'].forEach(m => {
         const btn = document.getElementById(`nav-${m}`);
@@ -49,21 +56,17 @@ function pindahModul(namaModul, durasiDetik) {
         }
     });
 
-    // Update Elemen Informasi UI berdasarkan pilar pilihan
     document.getElementById('pilar-badge').innerText = `IELTS ${namaModul}`;
     document.getElementById('panel-tag').innerText = PILAR_GUIDES[namaModul].tag;
     document.getElementById('format-info-badge').innerText = PILAR_GUIDES[namaModul].info;
     document.getElementById('total-questions-badge').innerText = PILAR_GUIDES[namaModul].quizInfo;
     
-    // Reset dan mulai ulang countdown timer pilar baru
     startTimer();
 
-    // Tampilkan placeholder loading sebelum response JSONP tiba
     document.getElementById('passage-title').innerText = "Memuat materi...";
     document.getElementById('passage-content').innerHTML = '<p class="text-slate-400 italic text-center py-12">Menghubungkan ke database Google Sheets Anda...</p>';
     document.getElementById('quiz-container').innerHTML = '';
 
-    // Ambil data real-time dari spreadsheet
     ambilMateriUjian();
 }
 
@@ -80,16 +83,15 @@ function startTimer() {
         if (sisaWaktu <= 0) {
             clearInterval(intervalTimer);
             display.innerText = "Time Up!";
-            submitUserAnswers(true); // Kirim lembar jawaban otomatis saat waktu habis
+            submitUserAnswers(true); 
         } else {
             sisaWaktu--;
         }
     }, 1000);
 }
 
-// AMBIL DATA BERDASARKAN PILAR YANG SEDANG AKTIF + ANTI CACHE VIA JSONP
+// AMBIL DATA DARI SPREADSHEET
 function ambilMateriUjian() {
-    // Batas waktu tunggu maksimal 4 detik. Jika server sibuk, pakai fallback data biar halaman tidak ngeblank putih
     const timeoutFetch = setTimeout(() => {
         if (!dataLoaded) {
             console.warn("Jaringan lambat, memuat materi cadangan.");
@@ -103,7 +105,6 @@ function ambilMateriUjian() {
         clearTimeout(timeoutFetch);
         
         if (data && data.length > 0) {
-            // FILTER DATA: Cari baris soal terbawah (terbaru) di Sheet yang kolom pilarnya cocok dengan tab pilihan user
             let materiCocok = null;
             for (let i = data.length - 1; i >= 0; i--) {
                 if (data[i].pilar && data[i].pilar.toUpperCase() === modulAktif.toUpperCase()) {
@@ -112,11 +113,9 @@ function ambilMateriUjian() {
                 }
             }
 
-            // Jika baris pilar tersebut ditemukan di database sheet, pasang ke UI
             if (materiCocok) {
                 muatMateriKeUI(materiCocok);
             } else {
-                // Tampilan panel info jika pilar tersebut belum pernah di-generate dari admin panel
                 document.getElementById('passage-title').innerText = `Belum Ada Soal ${modulAktif}`;
                 document.getElementById('passage-content').innerHTML = `
                     <div class="p-5 bg-amber-50 text-amber-700 border border-amber-200 rounded-xl text-xs leading-relaxed">
@@ -135,7 +134,6 @@ function ambilMateriUjian() {
         if (document.getElementById(cb)) document.getElementById(cb).remove();
     };
 
-    // Hancurkan cache CDN/browser menggunakan timestamp unik di setiap request script
     const timestamp = new Date().getTime();
     const script = document.createElement('script');
     script.src = `${SCRIPT_URL}?action=getQuestions&callback=${cb}&_=${timestamp}`;
@@ -149,16 +147,108 @@ function ambilMateriUjian() {
     document.body.appendChild(script);
 }
 
-// RENDER DATA TEXT / TRANSCRIPT KE UI PANEL KIRI
+// RENDER DATA TEXT KE UI (DIUBAH MENJADI AUDIO PLAYER JIKA MODUL LISTENING)
 function muatMateriKeUI(materi) {
     if (!materi.judul) return;
     document.getElementById('passage-title').innerText = materi.judul;
-    const paragraphs = materi.konten.split('\n\n');
-    document.getElementById('passage-content').innerHTML = paragraphs.map(p => `<p class="mb-4 text-justify leading-relaxed">${p}</p>`).join('');
+    
+    if (modulAktif === "Listening") {
+        // TAMPILKAN AUDIO PLAYER BOX (MENYEMBUNYIKAN TRANSSKRIP ASLI AGAR SISWA FOKUS MENDENGAR)
+        document.getElementById('passage-content').innerHTML = `
+            <div class="bg-slate-900 text-white p-6 rounded-2xl border border-slate-800 shadow-xl max-w-md mx-auto my-6 text-center space-y-4">
+                <div class="text-xs font-bold uppercase tracking-widest text-blue-400">IELTS Audio Player Engine</div>
+                <div class="text-3xl py-2">🎧</div>
+                <div class="text-xs text-slate-400 px-4">Tekan tombol play di bawah untuk mendengarkan rekaman audio ujian. Audio hanya dapat diputar sekali.</div>
+                
+                <div class="pt-2 flex justify-center gap-3">
+                    <button onclick="kontrolAudio('play', \`${materi.konten.replace(/`/g, '\\`').replace(/"/g, '\\"')}\`)" id="btn-play" class="bg-blue-600 hover:bg-blue-500 font-bold px-6 py-2.5 rounded-xl text-xs transition flex items-center gap-2">
+                        ▶ Play Audio
+                    </button>
+                    <button onclick="kontrolAudio('stop')" id="btn-stop" class="bg-slate-800 hover:bg-slate-700 font-bold px-6 py-2.5 rounded-xl text-xs transition flex items-center gap-2 text-slate-400">
+                        ⏹ Stop
+                    </button>
+                </div>
+                
+                <div id="audio-status" class="text-[10px] text-slate-500 italic">Status: Ready to stream</div>
+            </div>`;
+    } else {
+        // Pilar biasa (Reading/Writing/Speaking) tetap memunculkan paragraf teks bacaan utuh
+        const paragraphs = materi.konten.split('\n\n');
+        document.getElementById('passage-content').innerHTML = paragraphs.map(p => `<p class="mb-4 text-justify leading-relaxed">${p}</p>`).join('');
+    }
+
     if (materi.pertanyaan) renderQuiz(materi.pertanyaan, materi.kunci_jawaban);
 }
 
-// GENERATE PILIHAN KUIS RADIO BUTTON DI PANEL KANAN
+// MANAGEMENT ENGINE SUARA TEXT TO SPEECH (MIMIC AUDIO STREAM)
+function kontrolAudio(aksi, teksTranskrip = "") {
+    const statusText = document.getElementById('audio-status');
+    const btnPlay = document.getElementById('btn-play');
+
+    if (aksi === 'play') {
+        if (!synthSuara) {
+            alert("Browser Anda tidak mendukung simulasi audio player ini.");
+            return;
+        }
+
+        if (synthSuara.paused && sedangDiputar) {
+            // Lanjutkan jika sedang di-pause
+            synthSuara.resume();
+            statusText.innerText = "Status: Playing audio stream...";
+            return;
+        }
+
+        // Hentikan suara sisa sebelumnya jika ada
+        synthSuara.cancel();
+
+        // Bersihkan teks transkrip dari kode-kode HTML agar suara bacanya jernih
+        let cleanedText = teksTranskrip.replace(/<[^>]*>/g, '').replace(/Host:/g, 'Host says:').replace(/Dr. Sharma:/g, 'Doctor Sharma says:');
+        
+        utteranceSuara = new SpeechSynthesisUtterance(cleanedText);
+        
+        // SET AKSEN DEFAULT KE ENGLISH NATIVE SPEAKER (US / UK / AUSTRALIA)
+        utteranceSuara.lang = 'en-US'; 
+        utteranceSuara.rate = 0.95; // Sedikit diperlambat agar artikulasi IELTS terdengar jelas
+        
+        utteranceSuara.onstart = () => {
+            sedangDiputar = true;
+            statusText.innerText = "Status: Playing audio stream...";
+            statusText.className = "text-[10px] text-blue-400 font-semibold animate-pulse";
+            btnPlay.innerText = "⏸ Pause Audio";
+            btnPlay.setAttribute("onclick", "kontrolAudio('pause')");
+        };
+
+        utteranceSuara.onend = () => {
+            sedangDiputar = false;
+            statusText.innerText = "Status: Audio finished.";
+            statusText.className = "text-[10px] text-slate-500 italic";
+            btnPlay.innerText = "▶ Play Audio";
+            btnPlay.setAttribute("onclick", "kontrolAudio('play')");
+            btnPlay.className = "bg-slate-800 text-slate-600 font-bold px-6 py-2.5 rounded-xl text-xs cursor-not-allowed";
+            btnPlay.disabled = true; // Sesuai aturan IELTS asli: Audio hanya diputar sekali!
+        };
+
+        synthSuara.speak(utteranceSuara);
+
+    } else if (aksi === 'pause') {
+        if (synthSuara.speaking && !synthSuara.paused) {
+            synthSuara.pause();
+            statusText.innerText = "Status: Audio paused";
+            statusText.className = "text-[10px] text-amber-400 italic";
+            btnPlay.innerText = "▶ Resume Audio";
+            btnPlay.setAttribute("onclick", "kontrolAudio('play')");
+        }
+    } else if (aksi === 'stop') {
+        synthSuara.cancel();
+        sedangDiputar = false;
+        statusText.innerText = "Status: Audio streaming stopped.";
+        statusText.className = "text-[10px] text-slate-500 italic";
+        btnPlay.innerText = "▶ Play Audio";
+        btnPlay.setAttribute("onclick", "kontrolAudio('play')");
+    }
+}
+
+// GENERATE FORM SOAL INTERAKTIF
 function renderQuiz(soalStr, kunciStr) {
     const container = document.getElementById('quiz-container');
     kunciJawabanSistem = kunciStr ? kunciStr.split(',') : [];
@@ -197,8 +287,9 @@ function simpanJawaban(index, nilai) {
     jawabanUserMap[index] = nilai;
 }
 
-// EVALUASI LEMBAR JAWABAN & HITUNG BAND SCORE
+// EVALUASI JAWABAN
 function submitUserAnswers(dipaksaWaktuHabis = false) {
+    if (synthSuara) synthSuara.cancel(); // Matikan suara jika tombol submit ditekan
     if (intervalTimer) clearInterval(intervalTimer);
     let skorBenar = 0;
     const totalSoal = kunciJawabanSistem.length;
@@ -214,7 +305,6 @@ function submitUserAnswers(dipaksaWaktuHabis = false) {
     document.getElementById('band-score').innerText = bandScore.toFixed(1);
     document.getElementById('correct-fraction').innerText = `Benar ${skorBenar} dari ${totalSoal} Soal`;
 
-    // Tampilkan Modal Hasil Box dengan Transisi Efek Memudar Halus
     const modal = document.getElementById('result-modal');
     const box = document.getElementById('result-box');
     modal.classList.remove('hidden');
