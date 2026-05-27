@@ -1,19 +1,17 @@
 body {
     font-family: 'Plus Jakarta Sans', sans-serif;
 }
-
-/* Penyesuaian Scrollbar Gelap Premium */
+/* Scrollbar custom dark sleek theme */
 ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+    width: 5px;
 }
 ::-webkit-scrollbar-track {
-    background: #020617; /* Slate 950 */
+    background: #020617;
 }
 ::-webkit-scrollbar-thumb {
-    background: #1e293b; /* Slate 800 */
+    background: #1e293b;
     border-radius: 10px;
 }
 ::-webkit-scrollbar-thumb:hover {
-    background: #334155; /* Slate 700 */
+    background: #334155;
 }
