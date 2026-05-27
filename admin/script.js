@@ -1,14 +1,20 @@
 // =========================================================================
 // PENTING: SESUAIKAN SCRIPT_URL DENGAN LINK WEB APP APPS SCRIPT ANDA
 // =========================================================================
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbysfhxwG6PTzWOCa8pKg8b8E8EgB933YUQU6UWqvPQcGQGXQd7wlvlch3j5NsY3gbgq/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzc6W_0drPCYbRJqRv2tFKRakLq-Fh3YvlWM_ABpHaB3l2XsURaNxMC4seFRjZRvays/exec";
 
 document.addEventListener('DOMContentLoaded', ambilLogDariSpreadsheet);
 
+// Fungsi memunculkan modal sekaligus mengunci efek blur layar belakang
 function showMessage(title, text) {
     document.getElementById('msg-title').innerText = title;
     document.getElementById('msg-body').innerText = text;
     document.getElementById('message-modal').classList.remove('hidden');
+}
+
+// Fungsi menutup modal dan langsung mengembalikan kecerahan layar admin secara total
+function closeModal() {
+    document.getElementById('message-modal').classList.add('hidden');
 }
 
 function fetchJSONP(url, params = {}) {
@@ -17,7 +23,8 @@ function fetchJSONP(url, params = {}) {
         window[callbackName] = data => { 
             resolve(data); 
             delete window[callbackName]; 
-            document.getElementById(callbackName).remove(); 
+            const el = document.getElementById(callbackName);
+            if (el) el.remove(); 
         };
         const urlObj = new URL(url);
         urlObj.searchParams.set('callback', callbackName);
@@ -28,7 +35,8 @@ function fetchJSONP(url, params = {}) {
         script.onerror = () => { 
             reject(); 
             delete window[callbackName]; 
-            document.getElementById(callbackName).remove(); 
+            const el = document.getElementById(callbackName);
+            if (el) el.remove(); 
         };
         document.body.appendChild(script);
     });
@@ -59,19 +67,17 @@ function ambilLogDariSpreadsheet() {
 
 function generateMateriOtomatis() {
     const btn = document.getElementById('btn-generate-ai');
-    // Ambil nilai pilar yang dipilih dari dropdown menu
     const pilarTerpilih = document.getElementById('select-pilar').value;
 
     btn.innerText = `Menulis Soal ${pilarTerpilih}... 🤖`;
     btn.disabled = true;
 
-    // Mengirimkan pilar pilihan ke Apps Script agar AI membaca instruksi pilar tersebut
     fetchJSONP(SCRIPT_URL, { action: 'generateAI', pilar: pilarTerpilih })
     .then(res => {
         showMessage(res.status === "success" ? "Berhasil!" : "Gagal!", res.status === "success" ? `Berhasil membuat materi ${pilarTerpilih} baru!` : res.message);
         ambilLogDariSpreadsheet();
     })
-    .catch(() => showMessage('Error', 'Gagal memanggil API database.'))
+    .catch((err) => showMessage('Gagal!', 'Terjadi kesalahan sistem internal atau format AI terputus.'))
     .finally(() => { 
         btn.innerText = '✨ Generate Soal Lewat AI'; 
         btn.disabled = false; 
