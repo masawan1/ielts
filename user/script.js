@@ -1,7 +1,7 @@
 // =========================================================================
 // PENTING: SESUAIKAN SCRIPT_URL DENGAN LINK WEB APP APPS SCRIPT ANDA
 // =========================================================================
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbysfhxwG6PTzWOCa8pKg8b8E8EgB933YUQU6UWqvPQcGQGXQd7wlvlch3j5NsY3gbgq/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz3hyj-S5EfOyEgt9ElpoB5hBgLWX41Ct93xiCfEfN1EWl87JPAVCP8B_KHXfIeXK2T/exec";
 
 // Ringkasan panduan komponen IELTS sesuai permintaan
 const PILAR_GUIDES = {
