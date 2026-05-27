@@ -1,4 +1,4 @@
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyZ2hbj_oDHaBvah9KXENPPbP1547x3l4-XM575uuKF6spxN4fsimQNn78MKdoFdxic/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx-QbU6LuHCzb7sIscbwvN6-iTYc5pkgy8Tg1gKBMeRNdWIM1aq5HTJcKbOvqcOUygY/exec";
 
 let modulAktif = "Reading", kunciJawabanSistem = [], sisaWaktu = 3600, intervalTimer = null, dataLoaded = false;
 let rawKontenArray = [], rawPertanyaanArray = [], jawabanUserMap = {};
@@ -10,7 +10,6 @@ window.addEventListener('DOMContentLoaded', () => {
     inisialisasiFiturGeserPanel(); 
 });
 
-// FITUR DRAG RESIZE PANEL TENGAH
 function inisialisasiFiturGeserPanel() {
     const container = document.getElementById('workspace-container');
     const panelKiri = document.getElementById('panel-kiri');
@@ -25,7 +24,7 @@ function inisialisasiFiturGeserPanel() {
     document.addEventListener('mouseup', () => isDragging = false);
 }
 
-// LOGIKA UTAMA SAKLI: BERPINDAH PILAR & MANAJEMEN LOCK TIMER
+// LOGIKA UTAMA: DETEKSI JENIS SEKTOR MODUL (IELTS VS GENERAL ENGLISH LEARN)
 function pindahModul(namaModul, durasiDetik) {
     modulAktif = namaModul; sisaWaktu = durasiDetik; dataLoaded = false;
     rawKontenArray = []; rawPertanyaanArray = []; kunciJawabanSistem = []; jawabanUserMap = {};
@@ -33,13 +32,11 @@ function pindahModul(namaModul, durasiDetik) {
     if (synthSuara) synthSuara.cancel(); sedangDiputar = false;
     if (mediaRecorder && sedangMerekam) { mediaRecorder.stop(); sedangMerekam = false; }
 
-    // Kamus sinkronisasi ID elemen HTML agar bebas dari error 'undefined'
     const listMenuId = {
         'Listening': 'nav-Listening', 'Reading': 'nav-Reading', 'Writing': 'nav-Writing', 'Speaking': 'nav-Speaking',
         'Grammar & Vocab': 'nav-GrammarVocab', 'Daily Conversation': 'nav-DailyConversation', 'Short Expression': 'nav-ShortExpression', 'Pronunciation': 'nav-Pronunciation'
     };
     
-    // Perbarui fokus CSS warna tombol tab atas
     for (let key in listMenuId) {
         const btn = document.getElementById(listMenuId[key]);
         if (btn) {
@@ -53,26 +50,32 @@ function pindahModul(namaModul, durasiDetik) {
         }
     }
 
-    // CEK DEFINISI MODE AKTIF (IELTS VS GENERAL ENGLISH LEARN MODE)
     const statusBadge = document.getElementById('mode-status-badge');
     const timerWidget = document.getElementById('timer');
+    const submitBtnArea = document.querySelector('button[onclick="submitUserAnswers()"]').parentElement;
 
+    // DETEKSI APAKAH MODUL TERMASUK RUMPUN LEARN MODE (BAHASA INGGRIS UMUM)
     if (namaModul === 'Grammar & Vocab' || namaModul === 'Daily Conversation' || namaModul === 'Short Expression' || namaModul === 'Pronunciation') {
-        // JIKA MODE BELAJAR (LEARN MODE) -> MATIKAN TIMER
         if (intervalTimer) clearInterval(intervalTimer);
         statusBadge.innerText = "LEARN MODE";
         statusBadge.className = "bg-emerald-500 text-slate-950 px-2 py-0.5 rounded font-black text-[10px]";
-        document.getElementById('pilar-badge').innerText = `LEARNING MODE - ${namaModul.toUpperCase()}`;
+        document.getElementById('pilar-badge').innerText = `LEARNING - ${namaModul.toUpperCase()}`;
+        document.getElementById('total-questions-badge').innerText = "STUDY NOTES & INSIGHT";
         
-        timerWidget.innerText = "☕ Relax Mode";
+        timerWidget.innerText = "☕ Study Room";
         timerWidget.className = "text-xs font-extrabold px-3 py-1 bg-emerald-600 text-white rounded shadow animate-none";
+        
+        // Sembunyikan tombol submit ujian karena tidak ada soal kuis yang perlu dikirim
+        submitBtnArea.classList.add('hidden');
     } else {
-        // JIKA MODE UTAMA IELTS -> AKTIFKAN COUNTDOWN TIMER SECARA KETAT
+        // KONDISI JIKA MODUL ADALAH REZIM SIMULASI IELTS KETAT
         statusBadge.innerText = "SIMULATION MODE";
         statusBadge.className = "bg-blue-600 text-white px-2 py-0.5 rounded font-black text-[10px]";
         document.getElementById('pilar-badge').innerText = `OFFICIAL SIMULATION - IELTS ${namaModul.toUpperCase()}`;
+        document.getElementById('total-questions-badge').innerText = "PRACTICE SHEET";
         
         timerWidget.className = "text-xs font-extrabold px-3 py-1 bg-rose-600 text-white rounded shadow animate-pulse";
+        submitBtnArea.classList.remove('hidden');
         startTimer();
     }
 
@@ -92,7 +95,7 @@ function startTimer() {
 }
 
 function ambilMateriUjian() {
-    document.getElementById('passage-content').innerHTML = '<p class="text-slate-400 italic text-center py-12">Loading server streaming data...</p>';
+    document.getElementById('passage-content').innerHTML = '<p class="text-slate-400 italic text-center py-12">Streaming study guidelines from database...</p>';
     document.getElementById('quiz-container').innerHTML = '';
     const cb = 'jsonp_kuis_' + Math.round(Math.random() * 100000);
     
@@ -122,15 +125,17 @@ function generateSubNavigations() {
     const rightNav = document.getElementById('right-sub-nav');
     leftNav.innerHTML = ''; rightNav.innerHTML = '';
 
-    let label = "Section";
-    if(modulAktif === "Writing" || modulAktif === "Short Expression") label = "Task";
-    if(modulAktif === "Listening" || modulAktif === "Speaking" || modulAktif === "Pronunciation" || modulAktif === "Daily Conversation") label = "Part";
-    if(modulAktif === "Reading") label = "Passage";
+    let label = "Topic";
+    if (modulAktif === "Listening" || modulAktif === "Daily Conversation") label = "Dialogue / Part";
+    if (modulAktif === "Reading") label = "Passage";
+    if (modulAktif === "Writing") label = "Task";
 
     rawKontenArray.forEach((_, index) => {
         leftNav.innerHTML += `<button onclick="showSection(${index})" id="btn-l-sec-${index}" class="px-2 py-0.5 text-[10px] font-bold border rounded bg-white text-slate-700 hover:bg-slate-50 transition">${label} ${index + 1}</button>`;
     });
-    if (rawPertanyaanArray.length > 0 && rawPertanyaanArray[0] !== "") {
+
+    // Sub-navigasi kanan hanya dibuat jika berada di mode IELTS (karena mode belajar memetakan konten berdampingan otomatis)
+    if (kunciJawabanSistem[0] !== "LEARN_MODE" && rawPertanyaanArray.length > 0 && rawPertanyaanArray[0] !== "") {
         rawPertanyaanArray.forEach((_, index) => {
             rightNav.innerHTML += `<button onclick="showQuestions(${index})" id="btn-r-sec-${index}" class="px-2 py-0.5 text-[10px] font-bold border rounded bg-white text-slate-700 hover:bg-slate-50 transition">Q-Set ${index + 1}</button>`;
         });
@@ -150,21 +155,33 @@ function showSection(index) {
     if (modulAktif === "Listening" || modulAktif === "Daily Conversation") {
         contentArea.innerHTML = `
             <div class="bg-slate-900 text-white p-5 rounded-xl text-center space-y-3 max-w-sm mx-auto my-4 shadow-xl">
-                <div class="text-[9px] font-bold text-blue-400 uppercase tracking-widest">English Audio Engine</div>
+                <div class="text-[9px] font-bold text-blue-400 uppercase tracking-widest">Audio Listener Engine</div>
                 <div class="text-2xl">🎧</div>
                 <div class="pt-1 flex justify-center gap-2">
                     <button onclick="kontrolAudio('play', ${index})" id="btn-play" class="bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded text-xs font-bold transition">▶ Play Audio</button>
                     <button onclick="kontrolAudio('stop', ${index})" class="bg-slate-800 hover:bg-slate-700 px-4 py-2 rounded text-xs font-bold transition text-slate-400">Stop</button>
                 </div>
-                <div id="audio-status" class="text-[9px] text-slate-500 italic">Ready to stream.</div>
+                <div id="audio-status" class="text-[9px] text-slate-500 italic">Ready to stream speech text.</div>
             </div>`;
     } else {
         contentArea.innerHTML = textHTML;
     }
 
-    if (modulAktif === "Writing" || modulAktif === "Short Expression" || modulAktif === "Speaking" || modulAktif === "Pronunciation") {
-        showInteractiveInput(index);
+    // ADAPTASI KANVAS KANAN: Jika terdeteksi data edukasi murni (LEARN_MODE), render sebagai teks review rangkuman, bukan kuis
+    if (kunciJawabanSistem[0] === "LEARN_MODE") {
+        const container = document.getElementById('quiz-container');
+        if (rawPertanyaanArray[index]) {
+            let notesHTML = rawPertanyaanArray[index].split('\n\n').map(p => `<div class="p-4 bg-emerald-50/60 border border-emerald-100 rounded-xl text-xs text-slate-800 leading-relaxed shadow-sm mb-2">${p}</div>`).join('');
+            container.innerHTML = `
+                <div class="space-y-2">
+                    <div class="text-[10px] font-extrabold text-emerald-600 uppercase tracking-wider mb-2">📚 Teacher's Notes & Reference Box:</div>
+                    ${notesHTML}
+                </div>`;
+        } else {
+            container.innerHTML = `<p class="text-slate-400 italic text-xs text-center py-10">Membuka materi pendukung...</p>`;
+        }
     } else {
+        // Tampilan Lembar Kuis Khusus IELTS
         showQuestions(index);
     }
 }
@@ -188,40 +205,14 @@ function showQuestions(index) {
             <div class="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3 shadow-sm">
                 <p class="font-semibold text-xs text-slate-800 leading-relaxed">${qItem}</p>
                 <div class="grid grid-cols-3 gap-2 pt-1">
-                    <button onclick="simpanObjekAnswer('${globalIdx}', 'TRUE', this)" class="py-1.5 text-[10px] border rounded bg-white text-slate-700 ${activeAns === 'TRUE' ? 'border-2 border-blue-500 bg-blue-50 text-blue-600 font-bold' : ''}">OPTION A</button>
-                    <button onclick="simpanObjekAnswer('${globalIdx}', 'FALSE', this)" class="py-1.5 text-[10px] border rounded bg-white text-slate-700 ${activeAns === 'FALSE' ? 'border-2 border-blue-500 bg-blue-50 text-blue-600 font-bold' : ''}">OPTION B</button>
-                    <button onclick="simpanObjekAnswer('${globalIdx}', 'NOT GIVEN', this)" class="py-1.5 text-[10px] border rounded bg-white text-slate-700 ${activeAns === 'NOT GIVEN' ? 'border-2 border-blue-500 bg-blue-50 text-blue-600 font-bold' : ''}">OPTION C</button>
+                    <button onclick="simpanObjekAnswer('${globalIdx}', 'TRUE', this)" class="py-1.5 text-[10px] border rounded bg-white text-slate-700 ${activeAns === 'TRUE' ? 'border-2 border-blue-500 bg-blue-50 text-blue-600 font-bold' : ''}">TRUE / YES</button>
+                    <button onclick="simpanObjekAnswer('${globalIdx}', 'FALSE', this)" class="py-1.5 text-[10px] border rounded bg-white text-slate-700 ${activeAns === 'FALSE' ? 'border-2 border-blue-500 bg-blue-50 text-blue-600 font-bold' : ''}">FALSE / NO</button>
+                    <button onclick="simpanObjekAnswer('${globalIdx}', 'NOT GIVEN', this)" class="py-1.5 text-[10px] border rounded bg-white text-slate-700 ${activeAns === 'NOT GIVEN' ? 'border-2 border-blue-500 bg-blue-50 text-blue-600 font-bold' : ''}">NOT GIVEN</button>
                 </div>
             </div>`;
         }
     });
     container.innerHTML = htmlHTML;
-}
-
-function showInteractiveInput(index) {
-    const container = document.getElementById('quiz-container');
-    if (modulAktif === "Writing" || modulAktif === "Short Expression") {
-        let currentText = jawabanUserMap[`writing_${index}`] || "";
-        let wCount = currentText === "" ? 0 : currentText.trim().split(/\s+/).length;
-        container.innerHTML = `
-            <div class="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3 shadow-sm">
-                <div class="flex justify-between items-center">
-                    <span class="text-[10px] font-extrabold text-slate-500 uppercase">Writing Response Canvas</span>
-                    <span id="word-counter" class="text-[10px] font-bold px-2 py-0.5 bg-slate-200 text-slate-700 rounded">${wCount} words</span>
-                </div>
-                <textarea oninput="hitungKataEssay(this, ${index})" placeholder="Type your English response here..." class="w-full h-72 p-4 bg-white border border-slate-200 rounded-xl text-xs focus:outline-none resize-none leading-relaxed">${currentText}</textarea>
-            </div>`;
-    } else if (modulAktif === "Speaking" || modulAktif === "Pronunciation") {
-        container.innerHTML = `
-            <div class="p-5 bg-slate-900 border border-slate-800 rounded-2xl shadow-xl text-center space-y-4 text-white max-w-sm mx-auto">
-                <div class="text-[10px] font-extrabold text-blue-400 uppercase tracking-widest">Voice Audio Recorder</div>
-                <div id="mic-icon" class="text-3xl py-1">🎙️</div>
-                <button onclick="toggleMicSpeaking(${index})" id="btn-record" class="w-full bg-blue-600 hover:bg-blue-500 font-bold py-2.5 rounded-xl text-xs transition">🔴 Start Recording</button>
-                <div id="audio-preview-container" class="pt-2 ${recordedBlobs[index] ? '' : 'hidden'}">
-                    <audio id="audio-playback" controls src="${recordedBlobs[index] || ''}" class="w-full bg-slate-800 rounded-lg"></audio>
-                </div>
-            </div>`;
-    }
 }
 
 function kontrolAudio(aksi, pilarIndex = 0) {
@@ -245,52 +236,23 @@ function simpanObjekAnswer(id, val, btn) {
     jawabanUserMap[id] = val;
 }
 
-function hitungKataEssay(textarea, index) {
-    let txt = textarea.value; jawabanUserMap[`writing_${index}`] = txt;
-    document.getElementById('word-counter').innerText = `${txt.trim() === "" ? 0 : txt.trim().split(/\s+/).length} words`;
-}
-
-function toggleMicSpeaking(index) {
-    const btn = document.getElementById('btn-record'); const mic = document.getElementById('mic-icon');
-    if (!sedangMerekam) {
-        navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
-            mediaRecorder = new MediaRecorder(stream); audioChunks = [];
-            mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
-            mediaRecorder.onstop = () => {
-                recordedBlobs[index] = URL.createObjectURL(new Blob(audioChunks, { type: 'audio/mp3' }));
-                document.getElementById('audio-playback').src = recordedBlobs[index];
-                document.getElementById('audio-preview-container').classList.remove('hidden');
-            };
-            mediaRecorder.start(); sedangMerekam = true;
-            mic.className = "text-3xl py-1 animate-bounce text-rose-500"; btn.innerText = "Stop & Save";
-        });
-    } else {
-        if (mediaRecorder) mediaRecorder.stop(); sedangMerekam = false;
-        mic.className = "text-3xl py-1 text-white"; btn.innerText = "🔴 Record Again";
-    }
-}
-
 function submitUserAnswers() {
     if (synthSuara) synthSuara.cancel(); if (intervalTimer) clearInterval(intervalTimer);
-    let score = "Saved", detail = "Practice session completed successfully.";
+    let score = "0.0", benar = 0;
     
-    if (modulAktif === "Reading" || modulAktif === "Listening" || modulAktif === "Grammar & Vocab") {
-        let benar = 0;
-        kunciJawabanSistem.forEach((kunci, i) => {
-            let userAns = "";
-            for (let key in jawabanUserMap) { if (key.startsWith(`${i}_`) || key === `0_${i}` || key === `1_${i}`) userAns = jawabanUserMap[key]; }
-            if (userAns && userAns.trim().toUpperCase() === kunci.trim().toUpperCase()) benar++;
-        });
-        score = `${benar} / ${kunciJawabanSistem.length}`; detail = "Answers Evaluated";
-    }
+    kunciJawabanSistem.forEach((kunci, i) => {
+        let userAns = "";
+        for (let key in jawabanUserMap) { if (key.startsWith(`${i}_`) || key === `0_${i}`) userAns = jawabanUserMap[key]; }
+        if (userAns && userAns.trim().toUpperCase() === kunci.trim().toUpperCase()) benar++;
+    });
+    score = benar === kunciJawabanSistem.length ? "9.0" : benar > 0 ? "6.5" : "4.0";
     
     document.getElementById('band-score').innerText = score;
-    document.getElementById('correct-fraction').innerText = detail;
+    document.getElementById('correct-fraction').innerText = `Benar ${benar} dari ${kunciJawabanSistem.length} Soal`;
     const modal = document.getElementById('result-modal');
     modal.classList.remove('hidden'); setTimeout(() => modal.classList.remove('opacity-0'), 50);
 }
 
 function renderEmptyState() {
-    document.getElementById('passage-title').innerText = "Materi Belum Siap";
-    document.getElementById('passage-content').innerHTML = `<div class="p-4 bg-amber-50 text-amber-700 rounded-xl text-xs border border-amber-200">Kategori materi "${modulAktif}" belum pernah di-generate dari Admin Panel. Silakan buat soalnya terlebih dahulu di admin panel!</div>`;
+    document.getElementById('passage-content').innerHTML = `<div class="p-4 bg-amber-50 text-amber-700 rounded-xl text-xs border border-amber-200">Materi belum di-generate oleh Admin. Silakan buat materi pilar "${modulAktif}" ini di Admin Panel terlebih dahulu agar muncul di sini!</div>`;
 }
