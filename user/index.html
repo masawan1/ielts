@@ -6,35 +6,7 @@
     <title>English & IELTS Simulator Platform</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=2.8">
-    
-    <style>
-        .flashcard-wrapper {
-            perspective: 1000px;
-        }
-        .flashcard-inner {
-            position: relative;
-            width: 100%;
-            height: 100%;
-            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-            transform-style: preserve-3d;
-        }
-        /* Class pembantu saat kartu di-klik (akan ditrigger oleh JS) */
-        .flashcard-flipped {
-            transform: rotateY(180deg);
-        }
-        .card-front, .card-back {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            backface-visibility: hidden;
-            -webkit-backface-visibility: hidden;
-            border-radius: 1rem;
-        }
-        .card-back {
-            transform: rotateY(180deg);
-        }
-    </style>
+    <link rel="stylesheet" href="style.css?v=3.1">
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col overflow-hidden select-none">
 
@@ -107,44 +79,6 @@
         </div>
     </div>
 
-    <script src="script.js?v=2.8"></script>
+    <script src="script.js?v=3.1"></script>
 </body>
 </html>
-```
-
-### ⚡ Kita Sempurnakan Sekaligus Fungsi Click Kartunya di `user/script.js`
-Agar efek animasi 3D di atas bekerja saat di-klik, kita perlu menyempurnakan sedikit baris fungsi `balikKartuHafalan(elemen)` di file `user/script.js` Anda agar memicu rotasi sumbu Y secara halus. 
-
-Buka file **`user/script.js`**, cari fungsi `balikKartuHafalan`, lalu ganti isinya dengan potongan kode pintar ini:
-
-```javascript
-function balikKartuHafalan(elemen) {
-    const cardInner = elemen.querySelector('.flashcard-inner');
-    if (cardInner) {
-        cardInner.classList.toggle('flashcard-flipped');
-    }
-}
-```
-
-Dan pastikan blok HTML generator kartu di dalam fungsi `showSection` pada file **`user/script.js`** diubah strukturnya menjadi model pembungkus wrapper 3D seperti ini:
-
-```javascript
-// Struktur pembungkus wrapper 3D Flashcard Duolingo-Style
-deckHTML += `
-<div class="flashcard-wrapper w-full h-32 cursor-pointer" onclick="balikKartuHafalan(this)">
-    <div class="flashcard-inner duration-500 ease-in-out">
-        <div class="card-front bg-white border-2 border-slate-200 rounded-2xl p-4 shadow-sm flex justify-between items-center hover:border-emerald-400 transition">
-            <div>
-                <span class="bg-emerald-100 text-emerald-800 text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wide">English</span>
-                <h4 class="text-lg font-black text-slate-800 mt-0.5">${kataInggris}</h4>
-                <p class="text-[11px] text-slate-400 mt-0.5 italic font-medium">🗣️ ${contohKalimat}</p>
-            </div>
-            <button onclick="suaraLafalDuolingo(event, '${kataInggris}')" class="w-8 h-8 rounded-full bg-emerald-500 hover:bg-emerald-600 text-white flex items-center justify-center text-xs shadow transition transform active:scale-95">🔊</button>
-        </div>
-        <div class="card-back bg-emerald-950 text-white border-2 border-emerald-900 rounded-2xl p-4 shadow-inner flex flex-col justify-center items-center text-center">
-            <span class="text-[9px] text-emerald-400 font-bold uppercase tracking-widest">INDONESIAN MEANING</span>
-            <div class="text-xl font-black mt-0.5 tracking-wide text-emerald-100">${artiIndo}</div>
-            <div class="text-[9px] text-emerald-400/60 mt-1">Click to flip back</div>
-        </div>
-    </div>
-</div>`;
