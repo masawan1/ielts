@@ -1,9 +1,8 @@
-body {
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    -webkit-font-smoothing: antialiased;
-}
+/* =========================================================================
+   STABLE RESPONSIVE LAYOUT ENGINE FOR DESKTOP & MOBILE COOPERATIVE
+   ========================================================================= */
 
-/* Sembunyikan batang scrollbar bawaan browser di deretan tombol sub-nav agar rapi */
+/* Menghilangkan scrollbar bawaan pada horizontal navigation button */
 .no-scrollbar::-webkit-scrollbar {
     display: none;
 }
@@ -12,23 +11,49 @@ body {
     scrollbar-width: none;
 }
 
-/* Custom Scrollbar untuk kontainer bacaan */
-::-webkit-scrollbar {
-    width: 4px;
-    height: 4px;
-}
-::-webkit-scrollbar-track {
-    background: transparent;
-}
-::-webkit-scrollbar-thumb {
-    background: #cbd5e1;
-    border-radius: 10px;
-}
-::-webkit-scrollbar-thumb:hover {
-    background: #94a3b8;
+/* --- ATURAN KHUSUS LAPTOP / PC / TABLET LEBAR --- */
+@media (min-width: 768px) {
+    body {
+        height: 100vh !important;
+        overflow: hidden !important;
+    }
+    .workspace-layout {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 16px !important;
+        height: calc(100vh - 70px) !important;
+        min-h-0 !important;
+    }
+    .panel-box {
+        height: 100% !important;
+        min-height: 0 !important;
+    }
+    .panel-scroll-area {
+        overflow-y: auto !important;
+        flex-1: 1 1 0% !important;
+        min-height: 0 !important;
+    }
 }
 
-#panel-resizer {
-    user-select: none;
-    touch-action: none;
+/* --- ATURAN KHUSUS LAYOUT HANDPHONE (MOBILE) --- */
+@media (max-width: 767px) {
+    body {
+        overflow-y: auto !important; /* Lepas penguncian scroll global di HP */
+        height: auto !important;
+    }
+    .workspace-layout {
+        display: block !important;
+        height: auto !important;
+        padding-bottom: 70px !important; /* Buffer ruang agar tidak terpotong dock bawah */
+    }
+    .panel-box {
+        display: none; /* Visibilitas akan dikontrol mutlak oleh JS Tab Switcher */
+        width: 100% !important;
+        height: auto !important;
+        min-height: calc(100vh - 150px) !important;
+    }
+    .panel-scroll-area {
+        overflow-y: visible !important; /* Biarkan mengalir alami mengikuti scroll HP */
+        height: auto !important;
+    }
 }
