@@ -1,4 +1,4 @@
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw1g2l1_H9oCmmrV7XnUYDkmfEuFK31SmuaeLnijUtDSzXdfgVaeYpbLftebLIDGXJn/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx8Gczhf5e1BbUFS92a0UyG9k1O-k6yjsAUQZOjFEVBcRqFbWkSnPs4Btl7Ti6NTOkH/exec";
 
 let modulAktif = "Reading", kunciJawabanSistem = [], sisaWaktu = 3600, intervalTimer = null, dataLoaded = false;
 let rawKontenArray = [], rawPertanyaanArray = [], jawabanUserMap = {};
@@ -6,43 +6,27 @@ let synthSuara = window.speechSynthesis, utteranceSuara = null, sedangDiputar = 
 let mediaRecorder = null, audioChunks = [], sedangMerekam = false, recordedBlobs = {};
 let currentTabMobile = "materi"; 
 
-window.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', () => {
     pindahModul('Reading', 3600);
-    inisialisasiFiturGeserPanel(); 
     checkResponsiveLayout();
 });
 
 window.addEventListener('resize', checkResponsiveLayout);
 
-function inisialisasiFiturGeserPanel() {
-    const container = document.getElementById('workspace-container');
-    const panelKiri = document.getElementById('panel-kiri');
-    const resizer = document.getElementById('panel-resizer');
-    let isDragging = false;
-
-    if (!resizer) return;
-    resizer.addEventListener('mousedown', (e) => { e.preventDefault(); isDragging = true; });
-    document.addEventListener('mousemove', (e) => {
-        if (!isDragging || window.innerWidth < 768) return; 
-        let newPercent = ((e.clientX - container.getBoundingClientRect().left) / container.clientWidth) * 100;
-        if (newPercent >= 25 && newPercent <= 75) panelKiri.style.width = newPercent + '%';
-    });
-    document.addEventListener('mouseup', () => isDragging = false);
-}
-
-// LOGIKA DETEKSI RESPONSIF SMARTPHONE
 function checkResponsiveLayout() {
+    const panelKiri = document.getElementById('panel-kiri');
+    const panelKanan = document.getElementById('panel-kanan');
+    if (!panelKiri || !panelKanan) return;
+
     if (window.innerWidth >= 768) {
-        document.getElementById('panel-kiri').style.display = 'flex';
-        document.getElementById('panel-kiri').style.width = '50%';
-        document.getElementById('panel-kanan').style.display = 'flex';
+        panelKiri.style.display = 'flex';
+        panelKanan.style.display = 'flex';
     } else {
-        document.getElementById('panel-kiri').style.width = '100%';
         gantiTabMobile(currentTabMobile);
     }
 }
 
-// MANAGER TRANSISE TAB MOBILE (Passage vs Answer Sheet)
+// SWITCHER TAB MOBILE YANG STABIL & RESPONSIF
 function gantiTabMobile(tab) {
     currentTabMobile = tab;
     const panelKiri = document.getElementById('panel-kiri');
@@ -52,19 +36,19 @@ function gantiTabMobile(tab) {
 
     if (!panelKiri || !panelKanan) return;
 
-    if (tab === 'materi') {
-        panelKiri.style.setProperty('display', 'flex', 'important');
-        panelKanan.style.setProperty('display', 'none', 'important');
-        
-        btnMateri.className = "flex flex-col items-center justify-center text-blue-600 font-extrabold text-[11px] w-1/3 py-1 transition-all";
-        btnJawaban.className = "flex flex-col items-center justify-center text-slate-400 font-bold text-[11px] w-1/3 py-1 transition-all";
-    } else {
-        panelKiri.style.setProperty('display', 'none', 'important');
-        panelKanan.style.setProperty('display', 'flex', 'important');
-        panelKanan.className = "flex bg-white border border-slate-200 rounded-2xl flex-col h-full overflow-hidden flex-1 w-full";
-        
-        btnMateri.className = "flex flex-col items-center justify-center text-slate-400 font-bold text-[11px] w-1/3 py-1 transition-all";
-        btnJawaban.className = "flex flex-col items-center justify-center text-blue-600 font-extrabold text-[11px] w-1/3 py-1 transition-all";
+    if (window.innerWidth < 768) {
+        if (tab === 'materi') {
+            panelKiri.style.setProperty('display', 'flex', 'important');
+            panelKanan.style.setProperty('display', 'none', 'important');
+            if(btnMateri) btnMateri.className = "flex flex-col items-center justify-center text-blue-600 font-extrabold text-[11px] w-1/3 py-1";
+            if(btnJawaban) btnJawaban.className = "flex flex-col items-center justify-center text-slate-400 font-bold text-[11px] w-1/3 py-1";
+        } else {
+            panelKiri.style.setProperty('display', 'none', 'important');
+            panelKanan.style.setProperty('display', 'flex', 'important');
+            if(btnMateri) btnMateri.className = "flex flex-col items-center justify-center text-slate-400 font-bold text-[11px] w-1/3 py-1";
+            if(btnJawaban) btnJawaban.className = "flex flex-col items-center justify-center text-blue-600 font-extrabold text-[11px] w-1/3 py-1";
+        }
+        window.scrollTo(0, 0); // Reset otomatis posisi scroll ke atas pilar saat ganti tab
     }
 }
 
@@ -188,7 +172,7 @@ function showQuestions(index) {
             let globalIdx = index + '_' + qIdx;
             let activeAns = jawabanUserMap[globalIdx] || "";
             htmlHTML += `
-            <div class="p-4 sm:p-5 bg-white border border-slate-200/80 rounded-xl space-y-3 shadow-sm">
+            <div class="p-5 bg-white border border-slate-200/80 rounded-xl space-y-3.5 shadow-sm">
                 <p class="font-semibold text-xs text-slate-800 leading-relaxed">${qItem}</p>
                 <div class="grid grid-cols-3 gap-2 pt-1">
                     <button onclick="simpanObjekAnswer('${globalIdx}', 'TRUE', this)" class="py-2 text-[10px] border rounded-lg font-bold bg-white ${activeAns === 'TRUE' ? 'border-2 border-blue-500 bg-blue-50 text-blue-600' : ''}">TRUE</button>
@@ -207,19 +191,19 @@ function showInteractiveInput(index) {
         let currentText = jawabanUserMap['writing_' + index] || "";
         let wCount = currentText === "" ? 0 : currentText.trim().split(/\s+/).length;
         container.innerHTML = `
-            <div class="p-4 sm:p-5 bg-white border border-slate-200 rounded-xl space-y-3 shadow-sm">
+            <div class="p-5 bg-white border border-slate-200 rounded-xl space-y-4 shadow-sm">
                 <div class="flex justify-between items-center border-b border-slate-100 pb-2">
-                    <span class="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider">Answer Sheet: Task ${index + 1}</span>
-                    <span id="word-counter" class="text-[9px] font-bold px-2 py-0.5 bg-slate-100 text-slate-600 rounded-lg border">${wCount} words</span>
+                    <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">IELTS Answer Sheet: Task ${index + 1}</span>
+                    <span id="word-counter" class="text-[10px] font-bold px-2.5 py-1 bg-slate-100 text-slate-600 rounded-lg border">${wCount} words</span>
                 </div>
-                <textarea oninput="writingTextInputHandler(this, ${index})" placeholder="Type your response here..." class="w-full h-64 md:h-80 p-3 bg-slate-50/50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-blue-500 resize-none leading-relaxed transition-colors">${currentText}</textarea>
+                <textarea oninput="hitungKataEssay(this, ${index})" placeholder="Type your full IELTS response essay here..." class="w-full h-64 p-4 bg-slate-50/50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-blue-500 resize-none leading-relaxed transition-colors">${currentText}</textarea>
             </div>`;
     } else if (modulAktif === "Speaking") {
         container.innerHTML = `
-            <div class="p-5 bg-slate-900 border border-slate-800 rounded-2xl shadow-xl text-center space-y-4 text-white max-w-sm mx-auto">
-                <div class="text-[10px] font-extrabold text-blue-400 uppercase tracking-widest">Voice Recorder: Part ${index + 1}</div>
-                <div id="mic-icon" class="text-3xl py-1">🎙️</div>
-                <button onclick="toggleMicSpeaking(${index})" id="btn-record" class="w-full bg-blue-600 hover:bg-blue-500 font-bold py-2.5 rounded-xl text-xs transition shadow-md">🔴 Start Recording</button>
+            <div class="p-6 bg-slate-900 border border-slate-800 rounded-2xl shadow-xl text-center space-y-4 text-white max-w-sm mx-auto">
+                <div class="text-[10px] font-extrabold text-blue-400 uppercase tracking-widest">Speaking Voice Recorder: Part ${index + 1}</div>
+                <div id="mic-icon" class="text-4xl py-2">🎙️</div>
+                <button onclick="toggleMicSpeaking(${index})" id="btn-record" class="w-full bg-blue-600 hover:bg-blue-500 font-bold py-3 rounded-xl text-xs shadow-md">🔴 Start Recording Part ${index + 1}</button>
                 <div id="audio-preview-container" class="pt-2 ${recordedBlobs[index] ? '' : 'hidden'}">
                     <audio id="audio-playback" controls src="${recordedBlobs[index] || ''}" class="w-full bg-slate-800 rounded-xl"></audio>
                 </div>
@@ -238,16 +222,16 @@ function kontrolAudio(aksi, pilarIndex = 0) {
         utteranceSuara.onstart = () => { sedangDiputar = true; if(btnPlay) btnPlay.innerText = "⏸ Pause"; };
         utteranceSuara.onend = () => { sedangDiputar = false; if(btnPlay) { btnPlay.innerText = "Locked"; btnPlay.disabled = true; btnPlay.className = "bg-slate-800 text-slate-600 px-4 py-2 rounded-lg text-xs cursor-not-allowed"; } };
         synthSuara.speak(utteranceSuara);
-    } else if (aksi === 'stop') { synthSuara.cancel(); sedangDiputar = false; if(btnPlay) btnPlay.innerText = "▶ Play Audio"; }
+    } else if (aksi === 'stop') { synthSuara.cancel(); sedangDiputar = false; if(btnPlay) btnPlay.innerText = "▶ Play Part " + (pilarIndex + 1); }
 }
 
 function simpanObjekAnswer(id, val, btn) {
-    btn.parentElement.querySelectorAll('button').forEach(b => b.className = "py-2 text-[10px] border rounded-lg font-bold bg-white");
+    btn.parentElement.querySelectorAll('button').forEach(b => b.className = "py-2 text-[10px] border rounded-lg font-bold bg-white hover:bg-slate-50 transition");
     btn.className = "py-2 text-[10px] border-2 border-blue-500 bg-blue-50 text-blue-600 rounded-lg font-bold shadow-sm";
     jawabanUserMap[id] = val;
 }
 
-function writingTextInputHandler(textarea, index) {
+function hitungKataEssay(textarea, index) {
     let txt = textarea.value; jawabanUserMap['writing_' + index] = txt;
     document.getElementById('word-counter').innerText = (txt.trim() === "" ? 0 : txt.trim().split(/\s+/).length) + ' words';
 }
@@ -264,11 +248,11 @@ function toggleMicSpeaking(index) {
                 document.getElementById('audio-preview-container').classList.remove('hidden');
             };
             mediaRecorder.start(); sedangMerekam = true;
-            mic.className = "text-3xl py-1 animate-bounce text-rose-500"; btn.innerText = "⏹ Stop & Save";
+            mic.className = "text-4xl py-2 animate-bounce text-rose-500"; btn.innerText = "⏹ Stop & Save Part " + (index + 1);
         });
     } else {
         if (mediaRecorder) mediaRecorder.stop(); sedangMerekam = false;
-        mic.className = "text-3xl py-1 text-white"; btn.innerText = "🔴 Record Again";
+        mic.className = "text-4xl py-2 text-white"; btn.innerText = "🔴 Record Again";
     }
 }
 
@@ -288,5 +272,5 @@ function submitUserAnswers() {
 }
 
 function renderEmptyState() {
-    document.getElementById('passage-content').innerHTML = `<div class="p-4 bg-amber-50 text-amber-700 rounded-xl text-xs border border-amber-200">Materi belum siap. Silakan generate baru di Admin panel!</div>`;
+    document.getElementById('passage-content').innerHTML = `<div class="p-5 bg-amber-50 text-amber-700 rounded-xl text-xs border border-amber-200">Materi ${modulAktif} belum siap atau masih kosong di database. Silakan jalankan fitur 'Generate AI' di Control Panel Admin!</div>`;
 }
